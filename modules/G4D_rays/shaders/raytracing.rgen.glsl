@@ -82,6 +82,7 @@ void main() {
 			imageStore(img_normal_or_debug, COORDS, vec4(ray.normal, ssaoStrength * ray.ssao));
 			break;
 		case RENDERER_DEBUG_VIEWMODE_NORMALS:
+			// imageStore(img_normal_or_debug, COORDS, vec4(max(vec3(0), ray.normal), 1));
 			imageStore(img_normal_or_debug, COORDS, vec4(normalize(WORLD2VIEWNORMAL * ray.normal), 1));
 			break;
 		case RENDERER_DEBUG_VIEWMODE_RAYGEN_TIME:

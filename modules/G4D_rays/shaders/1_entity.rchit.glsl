@@ -40,7 +40,7 @@ void main() {
 	
 	vec3 albedo = surface.color.rgb;
 	
-	ray.normal = surface.normal;
+	ray.normal = normalize(MODEL2WORLDNORMAL * surface.normal);
 	
 	// Fresnel
 	float fresnel = Fresnel((renderer.viewMatrix * vec4(ray.worldPosition, 1)).xyz, normalize(WORLD2VIEWNORMAL * ray.normal), surface.ior);

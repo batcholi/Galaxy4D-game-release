@@ -78,6 +78,8 @@ void main() {
 		return;
 	}
 	
+	voxelSurface.normal = normalize(MODEL2WORLDNORMAL * voxelSurface.normal);
+	
 	VoxelSurface thisSurface = voxelSurface;
 	float fresnel = Fresnel((renderer.viewMatrix * vec4(worldPosition, 1)).xyz, normalize(WORLD2VIEWNORMAL * thisSurface.normal), thisSurface.ior);
 	

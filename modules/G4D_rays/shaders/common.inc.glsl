@@ -112,6 +112,7 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 	#define AABB_CENTER ((AABB_MIN + AABB_MAX) * 0.5)
 	#define AABB_CENTER_INT ivec3(round(AABB_CENTER))
 	#define MODELVIEW (renderer.viewMatrix * mat4(gl_ObjectToWorldEXT))
+	#define MODEL2WORLDNORMAL inverse(transpose(mat3(gl_ObjectToWorldEXT)))
 	#define MVP (xenonRendererData.config.projectionMatrix * MODELVIEW)
 	#define MVP_AA (xenonRendererData.config.projectionMatrixWithTAA * MODELVIEW)
 	#define MVP_HISTORY (xenonRendererData.config.projectionMatrix * MODELVIEW_HISTORY)

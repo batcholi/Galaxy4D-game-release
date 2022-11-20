@@ -9,15 +9,6 @@ float NormalDetail(in vec3 pos) {
 	return SimplexFractal(pos * 0.3, 2);
 }
 
-BUFFER_REFERENCE_STRUCT(16) TerrainTileData {
-	aligned_i32vec3 mapOffset;
-	aligned_uint32_t textureIndex;
-	aligned_uint32_t tileResolution;
-	aligned_uint32_t metersPerPixel;
-	aligned_uint32_t heightVariation;
-	aligned_uint32_t tileSizeMultiplier;
-};
-
 void main() {
 	ray.hitDistance = gl_HitTEXT;
 	ray.id = gl_InstanceCustomIndexEXT;
@@ -53,13 +44,13 @@ void main() {
 	
 	vec3 albedo = surface.color.rgb;
 	
-	ray.normal = surface.normal;
-	
+	ray.normal = normalize(MODEL2WORLDNORMAL * surface.normal);
+
 	// Fresnel
 	float fresnel = Fresnel((renderer.viewMatrix * vec4(ray.worldPosition, 1)).xyz, normalize(WORLD2VIEWNORMAL * ray.normal), surface.ior);
 	
 	// Fast Gi Approx
-	vec3 ambientColor = albedo * renderer.skyLightColor / (4 * 3.1415);
+	vec3 ambientColor = vec3(0);// albedo * renderer.skyLightColor / (4 * 3.1415);
 
 	// Direct Lighting
 	vec3 directSunLight = vec3(0);
