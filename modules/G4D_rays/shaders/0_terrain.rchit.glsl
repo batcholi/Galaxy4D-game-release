@@ -80,28 +80,28 @@ void main() {
 			// 	RAY_RECURSION_POP
 			
 			
-			// // Using Ray Query (faster)
-			// 	if (rayQuerySunlight(rayOrigin, sunDir)) {
-			// 		directSunLight = (albedo * renderer.skyLightColor + GetSunColor() * fresnel * surface.specular) * nDotL;
-			// 	}
-			
-			
-			// Using Ray Query with Soft Shadows
-				int shadowRaySamples = 16;
-				float sunLight = 0;
-				const float sunSolidAngle = 0.05;
-				for (int s = 0; s < shadowRaySamples; ++s) {
-					float pointRadius = sunSolidAngle * RandomFloat(seed);
-					float pointAngle = RandomFloat(seed) * 2.0 * 3.1415926535;
-					vec2 diskPoint = vec2(pointRadius * cos(pointAngle), pointRadius * sin(pointAngle));
-					vec3 lightTangent = normalize(cross(sunDir, ray.normal));
-					vec3 lightBitangent = normalize(cross(lightTangent, sunDir));
-					vec3 shadowRayDir = normalize(sunDir + diskPoint.x * lightTangent + diskPoint.y * lightBitangent);
-					if (rayQuerySunlight(rayOrigin, shadowRayDir)) {
-						++sunLight;
-					}
+			// Using Ray Query (faster)
+				if (rayQuerySunlight(rayOrigin, sunDir)) {
+					directSunLight = (albedo * renderer.skyLightColor + GetSunColor() * fresnel * surface.specular) * nDotL;
 				}
-				directSunLight = (albedo * renderer.skyLightColor + GetSunColor() * fresnel * surface.specular) * nDotL * pow(sunLight/shadowRaySamples, 2);
+			
+			
+			// // Using Ray Query with Soft Shadows
+			// 	int shadowRaySamples = 16;
+			// 	float sunLight = 0;
+			// 	const float sunSolidAngle = 0.05;
+			// 	for (int s = 0; s < shadowRaySamples; ++s) {
+			// 		float pointRadius = sunSolidAngle * RandomFloat(seed);
+			// 		float pointAngle = RandomFloat(seed) * 2.0 * 3.1415926535;
+			// 		vec2 diskPoint = vec2(pointRadius * cos(pointAngle), pointRadius * sin(pointAngle));
+			// 		vec3 lightTangent = normalize(cross(sunDir, ray.normal));
+			// 		vec3 lightBitangent = normalize(cross(lightTangent, sunDir));
+			// 		vec3 shadowRayDir = normalize(sunDir + diskPoint.x * lightTangent + diskPoint.y * lightBitangent);
+			// 		if (rayQuerySunlight(rayOrigin, shadowRayDir)) {
+			// 			++sunLight;
+			// 		}
+			// 	}
+			// 	directSunLight = (albedo * renderer.skyLightColor + GetSunColor() * fresnel * surface.specular) * nDotL * pow(sunLight/shadowRaySamples, 2);
 			
 			
 		}
