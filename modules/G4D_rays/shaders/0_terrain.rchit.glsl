@@ -1,15 +1,21 @@
 #define SHADER_RCHIT
 #include "common.inc.glsl"
+#include "gi.inc.glsl"
 
 layout(location = 0) rayPayloadInEXT RayPayload ray;
 
 hitAttributeEXT vec3 hitAttribs;
 
-float NormalDetail(in vec3 pos) {
-	return SimplexFractal(pos * 0.3, 2);
-}
+// float NormalDetail(in vec3 pos) {
+// 	return SimplexFractal(pos * 0.3, 2);
+// }
 
 void main() {
+	bool rayIsShadow = RAY_IS_SHADOW;
+	uint recursions = RAY_RECURSIONS;
+	bool rayIsGi = RAY_IS_GI;
+	// bool rayIsUnderWater = RAY_IS_UNDERWATER;
+	
 	ray.hitDistance = gl_HitTEXT;
 	ray.id = gl_InstanceCustomIndexEXT;
 	ray.renderableIndex = gl_InstanceID;
@@ -49,12 +55,9 @@ void main() {
 	// Fresnel
 	float fresnel = Fresnel((renderer.viewMatrix * vec4(ray.worldPosition, 1)).xyz, normalize(WORLD2VIEWNORMAL * ray.normal), surface.ior);
 	
-	// Fast Gi Approx
-	vec3 ambientColor = vec3(0);// albedo * renderer.skyLightColor / (4 * 3.1415);
-
 	// Direct Lighting
 	vec3 directSunLight = vec3(0);
-	if (RAY_RECURSIONS < RAY_MAX_RECURSION) {
+	if (recursions < RAY_MAX_RECURSION) {
 		vec3 color = ray.color.rgb;
 		ray.color = vec4(0);
 		vec3 sunDir = normalize(renderer.sunDir);
@@ -63,18 +66,18 @@ void main() {
 			const vec3 rayOrigin = ray.worldPosition + ray.normal * ray.hitDistance * 0.001;
 			
 			
-			// Using Ray Tracing Pipeline (more compatible)
-				RAY_RECURSION_PUSH
-					RAY_SHADOW_PUSH
-						RayPayload originalRay = ray;
-						traceRayEXT(tlas, gl_RayFlagsTerminateOnFirstHitEXT, 0xff/*RENDERABLE_STANDARD_EXCEPT_WATER*/, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, xenonRendererData.config.zNear, sunDir, xenonRendererData.config.zFar, 0);
-						if (ray.hitDistance == -1) {
-							// lit
-							directSunLight = (albedo * renderer.skyLightColor + ray.color.rgb * fresnel * surface.specular) * nDotL;
-						}
-						ray = originalRay;
-					RAY_SHADOW_POP
-				RAY_RECURSION_POP
+			// // Using Ray Tracing Pipeline (more compatible)
+			// 	RAY_RECURSION_PUSH
+			// 		RAY_SHADOW_PUSH
+			// 			RayPayload originalRay = ray;
+			// 			traceRayEXT(tlas, gl_RayFlagsTerminateOnFirstHitEXT, ~(RAYTRACE_TYPE_WATER), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, xenonRendererData.config.zNear, sunDir, xenonRendererData.config.zFar, 0);
+			// 			if (ray.hitDistance == -1) {
+			// 				// lit
+			// 				directSunLight = (albedo * renderer.skyLightColor + ray.color.rgb * fresnel * surface.specular) * nDotL;
+			// 			}
+			// 			ray = originalRay;
+			// 		RAY_SHADOW_POP
+			// 	RAY_RECURSION_POP
 			
 			
 			// // Using Ray Query (faster)
@@ -83,29 +86,67 @@ void main() {
 			// 	}
 			
 			
-			// // Using Ray Query with Soft Shadows
-			// 	int shadowRaySamples = 16;
-			// 	float sunLight = 0;
-			// 	const float sunSolidAngle = 0.05;
-			// 	for (int s = 0; s < shadowRaySamples; ++s) {
-			// 		float pointRadius = sunSolidAngle * RandomFloat(seed);
-			// 		float pointAngle = RandomFloat(seed) * 2.0 * 3.1415926535;
-			// 		vec2 diskPoint = vec2(pointRadius * cos(pointAngle), pointRadius * sin(pointAngle));
-			// 		vec3 lightTangent = normalize(cross(sunDir, ray.normal));
-			// 		vec3 lightBitangent = normalize(cross(lightTangent, sunDir));
-			// 		vec3 shadowRayDir = normalize(sunDir + diskPoint.x * lightTangent + diskPoint.y * lightBitangent);
-			// 		if (rayQuerySunlight(rayOrigin, shadowRayDir)) {
-			// 			++sunLight;
-			// 		}
-			// 	}
-			// 	directSunLight = (albedo * renderer.skyLightColor + GetSunColor() * fresnel * surface.specular) * nDotL * pow(sunLight/shadowRaySamples, 2);
+			// Using Ray Query with Soft Shadows
+				int shadowRaySamples = 16;
+				float sunLight = 0;
+				const float sunSolidAngle = 0.05;
+				for (int s = 0; s < shadowRaySamples; ++s) {
+					float pointRadius = sunSolidAngle * RandomFloat(seed);
+					float pointAngle = RandomFloat(seed) * 2.0 * 3.1415926535;
+					vec2 diskPoint = vec2(pointRadius * cos(pointAngle), pointRadius * sin(pointAngle));
+					vec3 lightTangent = normalize(cross(sunDir, ray.normal));
+					vec3 lightBitangent = normalize(cross(lightTangent, sunDir));
+					vec3 shadowRayDir = normalize(sunDir + diskPoint.x * lightTangent + diskPoint.y * lightBitangent);
+					if (rayQuerySunlight(rayOrigin, shadowRayDir)) {
+						++sunLight;
+					}
+				}
+				directSunLight = (albedo * renderer.skyLightColor + GetSunColor() * fresnel * surface.specular) * nDotL * pow(sunLight/shadowRaySamples, 2);
 			
 			
 		}
 	}
 	
-	// Final color
-	ray.color = vec4(directSunLight + ambientColor, 1);
+	ray.color = vec4(directSunLight, 1);
+	
+	const float GI_MAX_DISTANCE = 2048;
+	
+	const vec3 rayOrigin = ray.worldPosition + ray.normal * 0.0001;
+	const vec3 facingWorldPosition = ray.worldPosition + ray.normal * 0.5;
+	const uint giIndex = GetGiIndex(facingWorldPosition, 0);
+	const uint giIndex1 = GetGiIndex(facingWorldPosition, 1);
+	seed += recursions * RAY_MAX_RECURSION;
+	if (recursions < RAY_MAX_RECURSION && LockAmbientLighting(giIndex)) {
+		RayPayload originalRay = ray;
+		ray.color.rgb = vec3(0);
+		vec3 bounceDirection = normalize(originalRay.normal + RandomInUnitSphere(seed));
+		float nDotL = clamp(dot(originalRay.normal, bounceDirection), 0, 1);
+		RAY_RECURSION_PUSH
+			RAY_GI_PUSH
+				traceRayEXT(tlas, 0, ~(RAYTRACE_TYPE_WATER | RAYTRACE_TYPE_CLUTTER), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, facingWorldPosition, xenonRendererData.config.zNear, bounceDirection, GI_MAX_DISTANCE, 0);
+			RAY_GI_POP
+		RAY_RECURSION_POP
+		ray.color.rgb *= nDotL;
+		// ray.color.rgb *= smoothstep(GI_MAX_DISTANCE, 0, ray.hitDistance);
+		WriteAmbientLighting(giIndex, facingWorldPosition, originalRay.normal, ray.color.rgb);
+		UnlockAmbientLighting(giIndex);
+		ray = originalRay;
+	}
+	if (!rayIsGi && (xenonRendererData.config.options & RENDER_OPTION_ACCUMULATE) == 0) {
+		float giFactor = smoothstep(GI_MAX_DISTANCE, 0, ray.hitDistance);
+		ray.color.rgb += albedo * GetAmbientLighting(giIndex1, facingWorldPosition, vec3(0)/*thisSurface.posInVoxel*/, ray.normal) * giFactor;
+		if (recursions < RAY_MAX_RECURSION) {
+			RayPayload originalRay = ray;
+			ray.color.rgb = vec3(0);
+			RAY_RECURSION_PUSH
+				RAY_GI_PUSH
+					traceRayEXT(tlas, 0, RAYTRACE_TYPE_ATMOSPHERE, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, facingWorldPosition, 0, originalRay.normal, 0, 0);
+				RAY_GI_POP
+			RAY_RECURSION_POP
+			originalRay.color.rgb += albedo * ray.color.rgb * (1-giFactor) / 4;
+			ray = originalRay;
+		}
+	}
 	
 	// Debug Time
 	if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_RAYHIT_TIME) {

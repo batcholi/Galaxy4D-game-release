@@ -130,15 +130,15 @@ void WriteAmbientLighting(in uint giIndex, in vec3 worldPosition, in vec3 normal
 vec3 GetAmbientLighting(in uint giIndex, in vec3 worldPosition, in vec3 posInVoxel, in vec3 normal) {
 	if (abs(GetGi(giIndex).frameIndex - int64_t(xenonRendererData.frameIndex)) < ACCUMULATOR_MAX_FRAME_INDEX_DIFF && GetGi(giIndex).radiance.a > 1) {
 		vec4 lighting = vec4(GetGi(giIndex).radiance.rgb, 1);
-		for (int i = 0; i < nbAdjacentSides; ++i) {
-			if (abs(dot(vec3(adjacentSides[i]), normal)) < 0.01) {
-				uint adjacentGiIndex = GetGiIndex(worldPosition + adjacentSides[i], 1);
-				if (abs(GetGi(adjacentGiIndex).frameIndex - int64_t(xenonRendererData.frameIndex)) < ACCUMULATOR_MAX_FRAME_INDEX_DIFF && GetGi(adjacentGiIndex).radiance.a > 1) {
-					vec3 p = posInVoxel - vec3(adjacentSides[i]);
-					lighting += vec4(GetGi(adjacentGiIndex).radiance.rgb * (1 - clamp(sdfSphere(p, 0.667), 0, 1)), 1);
-				}
-			}
-		}
+		// for (int i = 0; i < nbAdjacentSides; ++i) {
+		// 	if (abs(dot(vec3(adjacentSides[i]), normal)) < 0.01) {
+		// 		uint adjacentGiIndex = GetGiIndex(worldPosition + adjacentSides[i], 1);
+		// 		if (abs(GetGi(adjacentGiIndex).frameIndex - int64_t(xenonRendererData.frameIndex)) < ACCUMULATOR_MAX_FRAME_INDEX_DIFF && GetGi(adjacentGiIndex).radiance.a > 1) {
+		// 			vec3 p = posInVoxel - vec3(adjacentSides[i]);
+		// 			lighting += vec4(GetGi(adjacentGiIndex).radiance.rgb * (1 - clamp(sdfSphere(p, 0.667), 0, 1)), 1);
+		// 		}
+		// 	}
+		// }
 		return pow(lighting.rgb / lighting.a, vec3(2.0)) + 0.0003;
 	}
 	return vec3(0.0007);

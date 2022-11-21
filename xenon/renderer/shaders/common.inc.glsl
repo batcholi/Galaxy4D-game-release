@@ -38,8 +38,8 @@ struct XenonRendererConfig {
 	#ifdef __cplusplus
 		XenonRendererConfig()
 		: renderScale(1.0f)
-		, zNear(0.001f)
-		, zFar(1'000'000)
+		, zNear(0.001f) // 1 mm
+		, zFar(1e13f) // 10 billion km
 		, cameraFov(80)
 		, debugViewMode(RENDER_DEBUG_VIEWMODE_NONE)
 		, debugViewScale(1.0f)
