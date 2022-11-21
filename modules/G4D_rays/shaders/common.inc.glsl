@@ -330,7 +330,12 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 			return vec3(1.9f,1.1f,0.1f) * pow(1-abs(t), 4);
 		}
 		vec3 GetSunColor() {
-			return renderer.skyLightColor * (RAY_IS_GI? vec3(0.75,0.9,1.3) : vec3(0.5,0.6,1.5));
+			float distance = 1.5e11;
+			vec3 position = renderer.sunDir * distance;
+			float radius = 700000000;
+			vec3 color = vec3(1);
+			float surfaceTemperature = 5778;
+			return color * GetSunRadiationAtDistanceSqr(surfaceTemperature, radius, distance*distance);
 		}
 	#endif
 
@@ -338,7 +343,7 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 		#extension GL_EXT_ray_query : require
 		bool rayQuerySunlight(in vec3 origin, in vec3 direction) {
 			rayQueryEXT q;
-			rayQueryInitializeEXT(q, tlas, gl_RayFlagsTerminateOnFirstHitEXT, ~(RAYTRACE_TYPE_WATER | RAYTRACE_TYPE_CLUTTER), origin, xenonRendererData.config.zNear, direction, xenonRendererData.config.zFar);
+			rayQueryInitializeEXT(q, tlas, gl_RayFlagsTerminateOnFirstHitEXT, ~(RAYTRACE_TYPE_WATER | RAYTRACE_TYPE_ATMOSPHERE | RAYTRACE_TYPE_CLUTTER), origin, xenonRendererData.config.zNear, direction, xenonRendererData.config.zFar);
 			while (rayQueryProceedEXT(q)) {
 				rayQueryConfirmIntersectionEXT(q);
 			}

@@ -31,6 +31,16 @@ BUFFER_REFERENCE_STRUCT_READONLY(16) AabbData {
 };
 STATIC_ASSERT_ALIGNED16_SIZE(AabbData, 32)
 
+BUFFER_REFERENCE_STRUCT_READONLY(16) AtmosphereData {
+	aligned_f32vec4 rayleigh;
+	aligned_f32vec4 mie;
+	aligned_float32_t outerRadius;
+	aligned_float32_t innerRadius;
+	aligned_float32_t sunGlow;
+	aligned_float32_t surfaceTemperature;
+};
+STATIC_ASSERT_ALIGNED16_SIZE(AtmosphereData, 48)
+
 struct GeometryInfo {
 	aligned_f32vec4 color;
 	aligned_uint64_t data;
@@ -98,4 +108,26 @@ STATIC_ASSERT_ALIGNED16_SIZE(AimBuffer, 96)
 	#if defined(SHADER_SURFACE)
 		layout(location = SURFACE_CALLABLE_PAYLOAD) callableDataInEXT Surface surface;
 	#endif
+	
+	float STEFAN_BOLTZMANN_CONSTANT = 5.670374419184429E-8;
+	float GetSunRadiationAtDistanceSqr(float surfaceTemperature, float radius, float distanceSqr) {
+		float radiusSqr = pow(radius, 2.0);
+		return radiusSqr * STEFAN_BOLTZMANN_CONSTANT * pow(surfaceTemperature, 4.0) / distanceSqr;
+	}
+	float GetRadiationAtTemperatureForWavelength(float temperature_kelvin, float wavelength_nm) {
+		float hcltkb = 14387769.6 / (wavelength_nm * temperature_kelvin);
+		float w = wavelength_nm / 1000.0;
+		return 119104.2868 / (w * w * w * w * w * (exp(hcltkb) - 1.0));
+	}
+	vec3 GetEmissionColor(float temperatureKelvin) {
+		return vec3(
+			GetRadiationAtTemperatureForWavelength(temperatureKelvin, 680.0),
+			GetRadiationAtTemperatureForWavelength(temperatureKelvin, 550.0),
+			GetRadiationAtTemperatureForWavelength(temperatureKelvin, 440.0)
+		);
+	}
+	vec3 GetEmissionColor(vec4 emission_temperature) {
+		return emission_temperature.rgb + GetEmissionColor(emission_temperature.a);
+	}
+
 #endif

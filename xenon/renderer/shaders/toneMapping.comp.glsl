@@ -16,7 +16,7 @@ void main() {
 	if ((xenonRendererData.config.options & RENDER_OPTION_TONE_MAPPING) != 0) {
 		float lumRgbTotal = xenonRendererData.histogram_avg_luminance.r + xenonRendererData.histogram_avg_luminance.g + xenonRendererData.histogram_avg_luminance.b;
 		float exposure = lumRgbTotal > 0 ? xenonRendererData.histogram_avg_luminance.a / lumRgbTotal : 1;
-		color.rgb = vec3(1.0) - exp(-color.rgb * clamp(exposure, xenonRendererData.config.minExposure, xenonRendererData.config.maxExposure));
+		color.rgb = vec3(1.0) - exp(-color.rgb * clamp(exposure, 0.001/*xenonRendererData.config.minExposure*/, 1/*xenonRendererData.config.maxExposure*/));
 	}
 	
 	// Contrast / Brightness
