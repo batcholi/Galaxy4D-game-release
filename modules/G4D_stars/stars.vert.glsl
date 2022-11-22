@@ -24,7 +24,6 @@ void main() {
 	float brightStars = step(1 - 5000.0/nbStars, RandomFloat(seed));
 	float veryBrightStars = step(1 - 400.0/nbStars, RandomFloat(seed));
 	float ultraBrightStars = step(1 - 15.0/nbStars, RandomFloat(seed));
-	float nebulae = step(1 - 10.0/nbStars, RandomFloat(seed));
 	
 	// Size
 	gl_PointSize = clamp(RandomFloat(seed) * 4, 2, 3);
@@ -36,7 +35,6 @@ void main() {
 		vec2 motion = imageLoad(img_motion, ivec2(screenSpacePos * xenonRendererData.config.renderScale)).xy;
 		if (abs(motion.x) + abs(motion.y) > 0.001) gl_PointSize *= starBrightnessCompensationForMonitorDuringMovement;
 	}
-	gl_PointSize += nebulae * 1000;
 	
 	// Final color + intensity
 	out_color = vec4(
@@ -45,5 +43,5 @@ void main() {
 		+ color2 * brightStars * 2
 		+ color2 * veryBrightStars * 64
 		+ color2 * ultraBrightStars * 1024
-	, 1) * 0.333 * (1-nebulae) + vec4(color1 * nebulae * 0.01, 1);
+	, 1) * 0.333;
 }
