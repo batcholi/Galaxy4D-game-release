@@ -10,7 +10,7 @@ void main() {
 	// Position
 	float distance = 1e13;
 	vec3 pos = RandomInUnitSphere(seed) * distance + vec3((RandomFloat(seed)-0.5) * RandomFloat(seed)*distance, (RandomFloat(seed)-0.5) * RandomFloat(seed)*distance, (RandomFloat(seed)-0.5) * RandomFloat(seed)*distance);
-	pos.y = sign(pos.y) * pow(abs(pos.y), mix(0.91, 0.96, step(nbStars * 0.5, gl_VertexIndex)));
+	pos.y = sign(pos.y) * pow(abs(pos.y), mix(0.9, 0.95, step(nbStars * 0.5, gl_VertexIndex)));
 	pos.z = sign(pos.z) * pow(abs(pos.z), 0.975);
 	gl_Position = xenonRendererData.config.projectionMatrix * viewMatrix * vec4(pos,1);
 	
@@ -26,7 +26,7 @@ void main() {
 	float ultraBrightStars = step(1 - 15.0/nbStars, RandomFloat(seed));
 	
 	// Size
-	gl_PointSize = clamp(RandomFloat(seed) * 5, 2, 4);
+	gl_PointSize = clamp(RandomFloat(seed) * 4, 2, 3);
 	// Compensate for darkening on some monitors when moving
 	float starBrightnessCompensationForMonitorDuringMovement = 1.1;
 	if (starBrightnessCompensationForMonitorDuringMovement > 1.001) {
@@ -43,5 +43,5 @@ void main() {
 		+ color2 * brightStars * 2
 		+ color2 * veryBrightStars * 64
 		+ color2 * ultraBrightStars * 1024
-	, 1) * 0.7;
+	, 1) * 0.333;
 }
