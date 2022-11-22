@@ -109,7 +109,7 @@ void main() {
 	}
 	ray.color = vec4(directSunLight, 1);
 	
-	bool useGi = false;
+	bool useGi = true;
 	
 	// Global Illumination
 	const float GI_MAX_DISTANCE = 2048;
