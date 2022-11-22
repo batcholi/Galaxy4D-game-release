@@ -10,7 +10,8 @@ void main() {
 	// Position
 	float distance = 1e13;
 	vec3 pos = RandomInUnitSphere(seed) * distance + vec3((RandomFloat(seed)-0.5) * RandomFloat(seed)*distance, (RandomFloat(seed)-0.5) * RandomFloat(seed)*distance, (RandomFloat(seed)-0.5) * RandomFloat(seed)*distance);
-	pos.y = sign(pos.y) * pow(abs(pos.y), mix(0.92, 0.96, step(nbStars * 0.3, gl_VertexIndex)));
+	pos.y = sign(pos.y) * pow(abs(pos.y), mix(0.91, 0.96, step(nbStars * 0.5, gl_VertexIndex)));
+	pos.z = sign(pos.z) * pow(abs(pos.z), 0.975);
 	gl_Position = xenonRendererData.config.projectionMatrix * viewMatrix * vec4(pos,1);
 	
 	// Color
@@ -34,5 +35,5 @@ void main() {
 		+ color2 * brightStars * 4
 		+ color2 * veryBrightStars * 128
 		+ color2 * ultraBrightStars * 1024
-	, 1) * 0.333;
+	, 1) * 0.25;
 }
