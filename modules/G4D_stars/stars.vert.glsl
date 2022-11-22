@@ -15,8 +15,8 @@ void main() {
 	gl_Position = xenonRendererData.config.projectionMatrix * viewMatrix * vec4(pos,1);
 	
 	// Color
-	vec3 color1 = pow(abs(RandomInUnitSphere(seed)) * vec3(1.0, 0.85, 0.6), vec3(0.5));
-	vec3 color2 = pow(abs(RandomInUnitSphere(seed)), vec3(0.25));
+	vec3 color1 = pow(abs(RandomInUnitSphere(seed)) * vec3((1-abs(Simplex(pos/1e12))), abs(Simplex(pos/2e12)), abs(Simplex(pos/3e12))), vec3(0.333));
+	vec3 color2 = pow(abs(RandomInUnitSphere(seed)), vec3(0.333));
 	
 	// Luminosity
 	float smallStars = (abs(Simplex(pos/4e12)) + abs(Simplex(pos/8e12))) * nbRatio;
@@ -30,10 +30,10 @@ void main() {
 	
 	// Final color + intensity
 	out_color = vec4(
-		+ color1 * smallStars * 0.25
-		+ color1 * normalStars * 0.5
-		+ color2 * brightStars * 4
-		+ color2 * veryBrightStars * 128
+		+ color1 * smallStars * 0.2
+		+ color1 * normalStars
+		+ color2 * brightStars * 2
+		+ color2 * veryBrightStars * 64
 		+ color2 * ultraBrightStars * 1024
-	, 1) * 0.25;
+	, 1) * 0.333;
 }
