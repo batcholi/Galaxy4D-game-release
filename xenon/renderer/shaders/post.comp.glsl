@@ -15,5 +15,6 @@ void main() {
 		color.rgb = mix(color.rgb, debug.rgb, debug.a);
 	}
 	
-	imageStore(img_swapchain, compute_coord, vec4(color.rgb, 1));
+	vec4 swapchain = imageLoad(img_swapchain, compute_coord);
+	imageStore(img_swapchain, compute_coord, vec4(swapchain.rgb * (1-color.a) + color.rgb, 1));
 }

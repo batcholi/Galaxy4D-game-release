@@ -299,8 +299,6 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 		}
 	#endif
 	
-	#include "noise.inc.glsl"
-
 	struct RayPayload {
 		vec4 color;
 		vec3 normal;

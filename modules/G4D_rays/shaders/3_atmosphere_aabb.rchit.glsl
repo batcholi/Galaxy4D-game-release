@@ -170,11 +170,11 @@ void main() {
 	}
 	
 	emission.rgb += GetEmissionColor(surfaceTemperature);
-	// emission.rgb *= 0.5;
 	
-	// fog = vec4(emission.rgb, pow(clamp(maxDepth/thickness, 0, 1), 2.718/*e*/));
-	// fog.a = mix(0, fog.a, pow(clamp(nextHitDistance/mie.a, 0, 1), 0.1));
+	fog = vec4(emission.rgb, pow(clamp(maxDepth/thickness, 0, 1), 2.718/*e*/));
+	fog.a = mix(0, fog.a, pow(clamp(nextHitDistance/mie.a, 0, 1), 0.1));
 	
 	if (rayIsGi) emission.rgb /= 3.1415;
-	ray.color.rgb += emission.rgb;
+	ray.color.rgb += emission.rgb + fog.rgb;
+	ray.color.a = max(ray.color.a, pow(fog.a, 2));
 }
