@@ -23,11 +23,13 @@ void main() {
 		const float SPHERE_T1 = float((-b - det) / a);
 		const float SPHERE_T2 = float((-b + det) / a);
 		
-		COMPUTE_BOX_INTERSECTION
+		// COMPUTE_BOX_INTERSECTION
 		
-		if (RAY_STARTS_OUTSIDE_T1_T2 || RAY_STARTS_BETWEEN_T1_T2) {
-			float MIN_T1 = min(SPHERE_T1, T1);
-			float MAX_T1 = max(SPHERE_T1, T1);
+		// if (RAY_STARTS_OUTSIDE_T1_T2 || RAY_STARTS_BETWEEN_T1_T2) {
+			// float MIN_T1 = min(SPHERE_T1, T1);
+			// float MAX_T1 = max(SPHERE_T1, T1);
+			float MIN_T1 = SPHERE_T1;
+			float MAX_T1 = SPHERE_T1;
 			
 			// Outside of sphere
 			if (gl_RayTminEXT < MAX_T1 && MIN_T1 < gl_RayTmaxEXT) {
@@ -42,7 +44,7 @@ void main() {
 				t2 = SPHERE_T2;
 				reportIntersectionEXT(gl_RayTminEXT, 1);
 			}
-		}
+		// }
 	}
 	DEBUG_RAY_INT_TIME
 }
