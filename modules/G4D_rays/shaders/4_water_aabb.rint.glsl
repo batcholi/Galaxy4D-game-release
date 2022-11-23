@@ -19,32 +19,23 @@ void main() {
 	const double discriminantSqr = b * b - a * c;
 	
 	if (discriminantSqr >= 0) {
-		const float det = float(sqrt(discriminantSqr));
-		const float SPHERE_T1 = float((-b - det) / a);
-		const float SPHERE_T2 = float((-b + det) / a);
+		const double det = double(sqrt(discriminantSqr));
+		const double T1 = double((-b - det) / a);
+		const double T2 = double((-b + det) / a);
 		
-		// COMPUTE_BOX_INTERSECTION
+		// Outside of sphere
+		if (gl_RayTminEXT < T1 && T1 < gl_RayTmaxEXT) {
+			t1 = float(T1);
+			t2 = float(T2);
+			reportIntersectionEXT(float(T1), 0);
+		}
 		
-		// if (RAY_STARTS_OUTSIDE_T1_T2 || RAY_STARTS_BETWEEN_T1_T2) {
-			// float MIN_T1 = min(SPHERE_T1, T1);
-			// float MAX_T1 = max(SPHERE_T1, T1);
-			float MIN_T1 = SPHERE_T1;
-			float MAX_T1 = SPHERE_T1;
-			
-			// Outside of sphere
-			if (gl_RayTminEXT < MAX_T1 && MIN_T1 < gl_RayTmaxEXT) {
-				t1 = SPHERE_T1;
-				t2 = SPHERE_T2;
-				reportIntersectionEXT(MAX_T1, 0);
-			}
-			
-			// Inside of sphere
-			if (MAX_T1 <= gl_RayTminEXT && SPHERE_T2 >= gl_RayTminEXT) {
-				t1 = SPHERE_T1;
-				t2 = SPHERE_T2;
-				reportIntersectionEXT(gl_RayTminEXT, 1);
-			}
-		// }
+		// Inside of sphere
+		if (T1 <= gl_RayTminEXT && T2 >= gl_RayTminEXT) {
+			t1 = float(T1);
+			t2 = float(T2);
+			reportIntersectionEXT(gl_RayTminEXT, 1);
+		}
 	}
 	DEBUG_RAY_INT_TIME
 }
