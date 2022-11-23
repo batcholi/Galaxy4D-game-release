@@ -2,5 +2,6 @@
 
 PUSH_CONSTANT_STRUCT StarsPushConstant {
 	aligned_f32mat4 viewMatrix;
-	int nbStars;
+	aligned_int32_t nbStars;
+	aligned_float32_t contrast;
 };

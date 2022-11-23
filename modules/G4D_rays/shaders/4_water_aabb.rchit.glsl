@@ -67,7 +67,7 @@ float WaterWaves(vec3 pos) {
 		+ Simplex(vec3(pos.xz*0.05, float(renderer.timestamp - pos.z*0.5)*0.5))*2
 		+ Simplex(vec3(pos.xz*0.3, float(renderer.timestamp - pos.z)))
 		+ Simplex(vec3(pos.xz*vec2(2, 4), float(renderer.timestamp - pos.z*2)))*0.5
-		// + RainDrops(pos)*4
+		+ RainDrops(pos)*4
 	;
 }
 

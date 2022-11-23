@@ -11,5 +11,7 @@ void main() {
 	vec4 starColor = vec4(in_color * pow(center, 2));
 	
 	ApplyToneMapping(starColor);
+	starColor.rgb = mix(vec3(0.5), starColor.rgb, contrast);
+	
 	out_post = vec4(starColor.rgb * pow(1-alpha, 4), 0);
 }
