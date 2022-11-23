@@ -17,7 +17,7 @@ hitAttributeEXT hit {
 
 void SetHitWater() {
 	ray.id = gl_InstanceCustomIndexEXT;
-	ray.renderableIndex = -1;//gl_InstanceID;
+	ray.renderableIndex = gl_InstanceID;
 	ray.geometryIndex = gl_GeometryIndexEXT;
 	ray.primitiveIndex = gl_PrimitiveID;
 	ray.localPosition = gl_ObjectRayOriginEXT + gl_ObjectRayDirectionEXT * gl_HitTEXT;
@@ -93,7 +93,6 @@ void main() {
 	bool rayIsGi = RAY_IS_GI;
 	bool rayIsShadow = RAY_IS_SHADOW;
 	vec3 worldPosition = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-	vec3 localPosition = gl_ObjectRayOriginEXT + gl_ObjectRayDirectionEXT * gl_HitTEXT;
 	
 	// Compute normal
 	vec3 surfaceNormal; // in world space
