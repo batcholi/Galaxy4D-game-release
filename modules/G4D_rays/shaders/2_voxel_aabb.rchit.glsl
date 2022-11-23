@@ -258,6 +258,6 @@ void main() {
 	
 	// Debug Time
 	if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_RAYHIT_TIME) {
-		if (RAY_RECURSIONS == 0) WRITE_DEBUG_TIME
+		if (recursions == 0) WRITE_DEBUG_TIME
 	}
 }

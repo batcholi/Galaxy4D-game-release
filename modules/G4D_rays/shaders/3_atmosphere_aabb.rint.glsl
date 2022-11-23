@@ -31,7 +31,8 @@ void main() {
 		// Inside of sphere
 		if (T1 <= gl_RayTminEXT && T2 >= gl_RayTminEXT) {
 			t2 = T2;
-			reportIntersectionEXT(max(gl_RayTminEXT, 1000), 1);
+			reportIntersectionEXT(max(gl_RayTminEXT, 500), 1);
 		}
 	}
+	DEBUG_RAY_INT_TIME
 }

@@ -140,6 +140,9 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 	#define RAY_IS_GI (imageLoad(rtPayloadImage, COORDS).b > 0)
 	#define RAY_GI_PUSH imageStore(rtPayloadImage, COORDS, imageLoad(rtPayloadImage, COORDS) + u8vec4(0,0,1,0));
 	#define RAY_GI_POP imageStore(rtPayloadImage, COORDS, imageLoad(rtPayloadImage, COORDS) - u8vec4(0,0,1,0));
+	#define RAY_IS_UNDERWATER (imageLoad(rtPayloadImage, COORDS).a > 0)
+	#define RAY_UNDERWATER_PUSH imageStore(rtPayloadImage, COORDS, imageLoad(rtPayloadImage, COORDS) + u8vec4(0,0,0,1));
+	#define RAY_UNDERWATER_POP imageStore(rtPayloadImage, COORDS, imageLoad(rtPayloadImage, COORDS) - u8vec4(0,0,0,1));
 
 	layout(set = 1, binding = SET1_BINDING_RENDERER_DATA) buffer RendererDataBuffer { RendererData renderer; };
 	layout(set = 1, binding = SET1_BINDING_RT_PAYLOAD_IMAGE, rgba8ui) uniform uimage2D rtPayloadImage; // Recursions, Shadow, Gi, Underwater

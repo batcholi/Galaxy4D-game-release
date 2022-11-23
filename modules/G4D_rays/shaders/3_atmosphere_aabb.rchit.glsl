@@ -177,4 +177,9 @@ void main() {
 	if (rayIsGi) emission.rgb /= 3.1415;
 	ray.color.rgb += emission.rgb + fog.rgb;
 	ray.color.a = max(ray.color.a, pow(fog.a, 2));
+	
+	// Debug Time
+	if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_RAYHIT_TIME) {
+		if (recursions == 0) WRITE_DEBUG_TIME
+	}
 }
