@@ -42,8 +42,8 @@ BUFFER_REFERENCE_STRUCT_READONLY(16) AtmosphereData {
 STATIC_ASSERT_ALIGNED16_SIZE(AtmosphereData, 48)
 
 BUFFER_REFERENCE_STRUCT_READONLY(16) WaterData {
-	aligned_f32vec3 center;
-	aligned_float32_t radius;
+	aligned_f64vec3 center;
+	aligned_float64_t radius;
 };
 STATIC_ASSERT_ALIGNED16_SIZE(AtmosphereData, 48)
 

@@ -14,7 +14,7 @@ void main() {
 	bool rayIsShadow = RAY_IS_SHADOW;
 	uint recursions = RAY_RECURSIONS;
 	bool rayIsGi = RAY_IS_GI;
-	// bool rayIsUnderWater = RAY_IS_UNDERWATER;
+	bool rayIsUnderWater = RAY_IS_UNDERWATER;
 	
 	ray.hitDistance = gl_HitTEXT;
 	ray.id = gl_InstanceCustomIndexEXT;
@@ -83,7 +83,7 @@ void main() {
 			
 			// Using Ray Query (faster)
 				if (rayQuerySunlight(rayOrigin, sunDir)) {
-					directSunLight = GetSunColor() * (albedo + fresnel * surface.specular) * nDotL;
+					directSunLight = GetSunColor() * (albedo + fresnel * surface.specular) * nDotL * (rayIsUnderWater? 0.5:1);
 				}
 			
 			

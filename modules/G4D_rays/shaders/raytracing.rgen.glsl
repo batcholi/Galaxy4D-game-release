@@ -24,7 +24,7 @@ void main() {
 	traceRayEXT(tlas, 0/*flags*/, 0xff/*rayMask*/, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, initialRayPosition, xenonRendererData.config.zNear, initialRayDirection, xenonRendererData.config.zFar, 0/*payloadIndex*/);
 	vec4 color = ray.color;
 	
-	bool hitSomething = ray.hitDistance >= 0;
+	bool hitSomething = ray.hitDistance >= 0 && ray.renderableIndex != -1;
 	vec3 motion;
 	float depth;
 	

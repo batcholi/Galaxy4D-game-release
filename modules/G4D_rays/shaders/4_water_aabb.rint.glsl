@@ -10,17 +10,18 @@ hitAttributeEXT hit {
 void main() {
 	WaterData water = WaterData(AABB.data);
 	if (uint64_t(water) == 0) return;
-	const float r = water.radius;
-	const vec3 oc = gl_WorldRayOriginEXT - water.center;
-	const float a = dot(gl_WorldRayDirectionEXT, gl_WorldRayDirectionEXT);
-	const float b = dot(oc, gl_WorldRayDirectionEXT);
-	const float c = dot(oc, oc) - r*r;
-	const float discriminantSqr = b * b - a * c;
+	
+	const dvec3 oc = dvec3(gl_WorldRayOriginEXT) - water.center;
+	const dvec3 dir = dvec3(gl_WorldRayDirectionEXT);
+	const double a = dot(dir, dir);
+	const double b = dot(oc, dir);
+	const double c = dot(oc, oc) - water.radius*water.radius;
+	const double discriminantSqr = b * b - a * c;
 	
 	if (discriminantSqr >= 0) {
-		const float det = sqrt(discriminantSqr);
-		const float SPHERE_T1 = (-b - det) / a;
-		const float SPHERE_T2 = (-b + det) / a;
+		const float det = float(sqrt(discriminantSqr));
+		const float SPHERE_T1 = float((-b - det) / a);
+		const float SPHERE_T2 = float((-b + det) / a);
 		
 		COMPUTE_BOX_INTERSECTION
 		
