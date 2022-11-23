@@ -63,8 +63,8 @@ float RainDrops(vec3 pos) {
 }
 
 const float smallWavesMaxDistance = 10;
-const float mediumWavesMaxDistance = 200;
-const float bigWavesMaxDistance = 1000;
+const float mediumWavesMaxDistance = 100;
+const float bigWavesMaxDistance = 500;
 const float giantWavesMaxDistance = 100000;
 
 float smallWavesStrength = smoothstep(smallWavesMaxDistance, 0, gl_HitTEXT);
