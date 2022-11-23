@@ -37,7 +37,7 @@ BUFFER_REFERENCE_STRUCT_READONLY(16) AtmosphereData {
 	aligned_float32_t outerRadius;
 	aligned_float32_t innerRadius;
 	aligned_float32_t sunGlow;
-	aligned_float32_t surfaceTemperature;
+	aligned_float32_t temperature;
 };
 STATIC_ASSERT_ALIGNED16_SIZE(AtmosphereData, 48)
 
@@ -116,9 +116,9 @@ STATIC_ASSERT_ALIGNED16_SIZE(AimBuffer, 96)
 	#endif
 	
 	float STEFAN_BOLTZMANN_CONSTANT = 5.670374419184429E-8;
-	float GetSunRadiationAtDistanceSqr(float surfaceTemperature, float radius, float distanceSqr) {
+	float GetSunRadiationAtDistanceSqr(float temperature, float radius, float distanceSqr) {
 		float radiusSqr = pow(radius, 2.0);
-		return radiusSqr * STEFAN_BOLTZMANN_CONSTANT * pow(surfaceTemperature, 4.0) / distanceSqr;
+		return radiusSqr * STEFAN_BOLTZMANN_CONSTANT * pow(temperature, 4.0) / distanceSqr;
 	}
 	float GetRadiationAtTemperatureForWavelength(float temperature_kelvin, float wavelength_nm) {
 		float hcltkb = 14387769.6 / (wavelength_nm * temperature_kelvin);

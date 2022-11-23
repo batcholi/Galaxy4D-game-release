@@ -34,7 +34,7 @@ struct Sun {
 	vec3 position;
 	float radius;
 	vec3 color;
-	float surfaceTemperature;
+	float temperature;
 };
 
 Sun suns[1];
@@ -53,7 +53,7 @@ void main() {
 	float outerRadius = atmosphere.outerRadius;
 	float innerRadius = atmosphere.innerRadius;
 	float sunGlow = atmosphere.sunGlow;
-	float surfaceTemperature = atmosphere.surfaceTemperature;
+	float temperature = atmosphere.temperature;
 	
 	
 	
@@ -61,7 +61,7 @@ void main() {
 		suns[0].position = renderer.sunDir * 1.5e11;
 		suns[0].radius = 700000000;
 		suns[0].color = vec3(1);
-		suns[0].surfaceTemperature = 5778;
+		suns[0].temperature = 5778;
 	
 	
 	
@@ -114,7 +114,7 @@ void main() {
 	for (int sunIndex = 0; sunIndex < nbSuns; ++sunIndex) {
 		Sun sun = suns[sunIndex];
 		vec3 relativeSunPosition = sun.position - atmospherePosition;
-		vec3 lightIntensity = sun.color * GetSunRadiationAtDistanceSqr(sun.surfaceTemperature, sun.radius, dot(relativeSunPosition, relativeSunPosition)) * 4.0 * 3.141592654;
+		vec3 lightIntensity = sun.color * GetSunRadiationAtDistanceSqr(sun.temperature, sun.radius, dot(relativeSunPosition, relativeSunPosition)) * 4.0 * 3.141592654;
 		if (length(lightIntensity) > sunLuminosityThreshold) {
 			vec3 lightDir = normalize(relativeSunPosition);
 			
@@ -169,13 +169,13 @@ void main() {
 		}
 	}
 	
-	emission.rgb += GetEmissionColor(surfaceTemperature);
-	
 	fog = vec4(emission.rgb, pow(clamp(maxDepth/thickness, 0, 1), 2.718/*e*/));
 	fog.a = mix(0, fog.a, pow(clamp(nextHitDistance/mie.a, 0, 1), 0.1));
 	
+	emission.rgb += GetEmissionColor(temperature) * fog.a;
+	
 	if (rayIsGi) emission.rgb /= 3.1415;
-	ray.color.rgb += emission.rgb + fog.rgb;
+	ray.color.rgb += (emission.rgb + fog.rgb) * pow(fog.a, 0.25);
 	ray.color.a = max(ray.color.a, pow(fog.a, 2));
 	
 	// Debug Time
