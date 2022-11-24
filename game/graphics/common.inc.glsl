@@ -36,10 +36,17 @@ BUFFER_REFERENCE_STRUCT_READONLY(16) AtmosphereData {
 	aligned_f32vec4 mie;
 	aligned_float32_t outerRadius;
 	aligned_float32_t innerRadius;
-	aligned_float32_t sunGlow;
+	aligned_float32_t g;
 	aligned_float32_t temperature;
 };
 STATIC_ASSERT_ALIGNED16_SIZE(AtmosphereData, 48)
+
+struct SunData {
+	vec3 position;
+	float radius;
+	vec3 color;
+	float temperature;
+};
 
 BUFFER_REFERENCE_STRUCT_READONLY(16) WaterData {
 	aligned_f64vec3 center;

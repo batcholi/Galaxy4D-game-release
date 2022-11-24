@@ -3,6 +3,8 @@
 #include "common.inc.glsl"
 #include "gi.inc.glsl"
 
+// https://www.alanzucconi.com/2017/10/10/atmospheric-scattering-1/
+
 const int RAYMARCH_STEPS = 24; // low=16, medium=24, high=48, ultra=64
 const int RAYMARCH_LIGHT_STEPS = 3; // low=2, medium=3, high=5, ultra=8
 const float sunLuminosityThreshold = 0.01;
@@ -30,15 +32,6 @@ hitAttributeEXT hit {
 	float intersectionT2;
 };
 
-struct Sun {
-	vec3 position;
-	float radius;
-	vec3 color;
-	float temperature;
-};
-
-Sun suns[1];
-
 void main() {
 	bool rayIsShadow = RAY_IS_SHADOW;
 	bool rayIsGi = RAY_IS_GI;
@@ -52,11 +45,12 @@ void main() {
 	vec4 mie = atmosphere.mie;
 	float outerRadius = atmosphere.outerRadius;
 	float innerRadius = atmosphere.innerRadius;
-	float sunGlow = atmosphere.sunGlow;
+	float g = atmosphere.g;
 	float temperature = atmosphere.temperature;
 	
 	
 	
+		SunData suns[1];
 		int nbSuns = 1; // atmosphere.nbSuns;
 		suns[0].position = renderer.sunDir * 1.5e11;
 		suns[0].radius = 700000000;
@@ -104,26 +98,26 @@ void main() {
 	float stepSize = rayDepth / float(RAYMARCH_STEPS);
 	
 	if (hasHitSomethingWithinAtmosphere) {
-		sunGlow = 0.0;
+		g = 0.0;
 	}
 	
 	// Start Ray-Marching in the atmosphere!
-	vec4 fog = vec4(0);
-	vec4 emission = vec4(0);
+	vec3 rayleighScattering = vec3(0);
+	vec3 mieScattering = vec3(0);
 	float maxDepth = 0;
 	for (int sunIndex = 0; sunIndex < nbSuns; ++sunIndex) {
-		Sun sun = suns[sunIndex];
+		SunData sun = suns[sunIndex];
 		vec3 relativeSunPosition = sun.position - atmospherePosition;
 		vec3 lightIntensity = sun.color * GetSunRadiationAtDistanceSqr(sun.temperature, sun.radius, dot(relativeSunPosition, relativeSunPosition)) * 4.0 * 3.141592654;
 		if (length(lightIntensity) > sunLuminosityThreshold) {
 			vec3 lightDir = normalize(relativeSunPosition);
 			
 			// Cache some values related to that light before raymarching in the atmosphere
-			float mu = dot(viewDir, lightDir);
+			float mu = dot(viewDir, -lightDir);
 			float mumu = mu * mu;
-			float gg = sunGlow*sunGlow;
+			float gg = g*g;
 			float rayleighPhase = 3.0 / (50.2654824574 /* (16 * pi) */) * (1.0 + mumu);
-			float miePhase = 3.0 / (25.1327412287 /* (8 * pi) */) * ((1.0 - gg) * (mumu + 1.0)) / (pow(1.0 + gg - 2.0 * mu * sunGlow, 1.5) * (2.0 + gg));
+			float miePhase = 3.0 / (25.1327412287 /* (8 * pi) */) * ((1.0 - gg) * (mumu + 1.0)) / (pow(1.0 + gg - 2.0 * mu * g, 1.5) * (2.0 + gg));
 			
 			// Init accumulation variables
 			vec2 opticalDepth = vec2(0);
@@ -158,25 +152,23 @@ void main() {
 					lightRayDist += lightRayStepSize;
 				}
 				
-				// vec3 attenuation = exp(-((mie.rgb * (opticalDepth.y + lightRayOpticalDepth.y)) + (rayleigh.rgb * (opticalDepth.x + lightRayOpticalDepth.x))));
 				vec3 attenuationRayleigh = exp(-rayleigh.rgb * (opticalDepth.x + lightRayOpticalDepth.x));
 				vec3 attenuationMie = exp(-mie.rgb * (opticalDepth.y + lightRayOpticalDepth.y));
-				emission.rgb += max(vec3(0),
+				rayleighScattering += max(vec3(0),
 					+ rayleigh.rgb * attenuationRayleigh * max(0, density.x * rayleighPhase) * lightIntensity
-					+ mie.rgb * attenuationMie * max(0, density.y * miePhase)
+				);
+				mieScattering += max(vec3(0),
+					+ mie.rgb * attenuationMie * max(0, density.y * miePhase) * lightIntensity
 				);
 			}
 		}
 	}
 	
-	fog = vec4(emission.rgb, pow(clamp(maxDepth/thickness, 0, 1), 2.718/*e*/));
+	vec4 fog = vec4(rayleighScattering + mieScattering + GetEmissionColor(temperature), pow(clamp(maxDepth/thickness, 0, 1), 4));
 	fog.a = mix(0, fog.a, pow(clamp(nextHitDistance/mie.a, 0, 1), 0.1));
 	
-	emission.rgb += GetEmissionColor(temperature) * fog.a;
-	
-	if (rayIsGi) emission.rgb /= 3.1415;
-	ray.color.rgb += (emission.rgb + fog.rgb) * pow(fog.a, 0.25);
-	ray.color.a = max(ray.color.a, pow(fog.a, 2));
+	ray.color.rgb += fog.rgb * fog.a;
+	ray.color.a += pow(fog.a, 4);
 	
 	// Debug Time
 	if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_RAYHIT_TIME) {
