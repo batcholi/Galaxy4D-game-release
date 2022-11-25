@@ -34,8 +34,8 @@ STATIC_ASSERT_ALIGNED16_SIZE(AabbData, 32)
 BUFFER_REFERENCE_STRUCT_READONLY(16) AtmosphereData {
 	aligned_f32vec4 rayleigh;
 	aligned_f32vec4 mie;
-	aligned_float32_t outerRadius;
 	aligned_float32_t innerRadius;
+	aligned_float32_t outerRadius;
 	aligned_float32_t g;
 	aligned_float32_t temperature;
 };

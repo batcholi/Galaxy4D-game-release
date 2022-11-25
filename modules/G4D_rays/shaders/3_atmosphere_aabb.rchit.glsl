@@ -5,8 +5,8 @@
 
 // https://www.alanzucconi.com/2017/10/10/atmospheric-scattering-1/
 
-const int RAYMARCH_STEPS = 24; // low=16, medium=24, high=48, ultra=64
-const int RAYMARCH_LIGHT_STEPS = 3; // low=2, medium=3, high=5, ultra=8
+const int RAYMARCH_STEPS = 48; // low=16, medium=24, high=48, ultra=64
+const int RAYMARCH_LIGHT_STEPS = 5; // low=2, medium=3, high=5, ultra=8
 const float sunLuminosityThreshold = 0.01;
 
 // #define SUN_SHAFTS
@@ -158,7 +158,7 @@ void main() {
 					+ rayleigh.rgb * attenuationRayleigh * max(0, density.x * rayleighPhase) * lightIntensity
 				);
 				mieScattering += max(vec3(0),
-					+ mie.rgb * attenuationMie * max(0, density.y * miePhase) * lightIntensity
+					+ mie.rgb * attenuationMie * max(0, density.y * miePhase) * lightIntensity * 0.5
 				);
 			}
 		}
