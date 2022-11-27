@@ -11,13 +11,15 @@ void main() {
 	const vec2 screenSize = vec2(gl_LaunchSizeEXT.xy);
 	const vec2 uv = pixelCenter/screenSize;
 	const vec3 initialRayPosition = inverse(renderer.viewMatrix)[3].xyz;
-	vec3 initialRayDirection = normalize(VIEW2WORLDNORMAL * normalize(vec4(inverse(mat4(xenonRendererData.config.projectionMatrixWithTAA)) * vec4(uv*2-1, 1, 1)).xyz));
+	vec3 viewDir = normalize(vec4(inverse(mat4(xenonRendererData.config.projectionMatrixWithTAA)) * vec4(uv*2-1, 1, 1)).xyz);
 	
 	// Warp drive
 	if (renderer.warp > 0) {
-		vec2 center = (pixelCenter/screenSize-0.5) * vec2(screenSize.x / screenSize.y, 1);
-		initialRayDirection.xz = mix(initialRayDirection.xz, initialRayDirection.xz* pow(clamp(length(center), 0.08, 1), 2)*10 , renderer.warp);
+		vec2 center = (pixelCenter/screenSize-0.5)*2 * vec2(screenSize.x / screenSize.y, 1);
+		viewDir.xy = mix(viewDir.xy, viewDir.xy* pow(clamp(length(center), 0.08, 1), 2)*10 , renderer.warp);
 	}
+	
+	vec3 initialRayDirection = normalize(VIEW2WORLDNORMAL * viewDir);
 	
 	imageStore(rtPayloadImage, COORDS, u8vec4(0));
 	if (xenonRendererData.config.debugViewMode != 0) {
