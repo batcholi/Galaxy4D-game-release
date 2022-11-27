@@ -167,6 +167,11 @@ void main() {
 	vec4 fog = vec4(rayleighScattering + mieScattering + GetEmissionColor(temperature), pow(clamp(maxDepth/thickness, 0, 1), 4));
 	fog.a = mix(0, fog.a, pow(clamp(nextHitDistance/mie.a, 0, 1), 0.1));
 	
+	if (rayIsGi) {
+		// Desaturate GI
+		fog.rgb = mix(fog.rgb, vec3(length(fog.rgb)), 0.7);
+	}
+	
 	ray.color.rgb += fog.rgb * fog.a;
 	ray.color.a += pow(fog.a, 4);
 	
