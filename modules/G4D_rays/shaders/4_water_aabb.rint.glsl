@@ -11,11 +11,13 @@ void main() {
 	WaterData water = WaterData(AABB.data);
 	if (uint64_t(water) == 0) return;
 	
+	const double r = water.radius + double( sin(float(double(renderer.timestamp*1.06))) + sin(float(double(renderer.timestamp*4.25))) + sin(float(double(renderer.timestamp*1.895))) ) * 0.01;
+	
 	const dvec3 oc = dvec3(gl_WorldRayOriginEXT) - water.center;
 	const dvec3 dir = dvec3(gl_WorldRayDirectionEXT);
 	const double a = dot(dir, dir);
 	const double b = dot(oc, dir);
-	const double c = dot(oc, oc) - water.radius*water.radius;
+	const double c = dot(oc, oc) - r*r;
 	const double discriminantSqr = b * b - a * c;
 	
 	if (discriminantSqr >= 0) {

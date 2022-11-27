@@ -71,10 +71,12 @@ void main() {
 			// 	RAY_RECURSION_PUSH
 			// 		RAY_SHADOW_PUSH
 			// 			RayPayload originalRay = ray;
-			// 			traceRayEXT(tlas, gl_RayFlagsTerminateOnFirstHitEXT, ~(RAYTRACE_TYPE_WATER | RAYTRACE_TYPE_ATMOSPHERE), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, xenonRendererData.config.zNear, sunDir, xenonRendererData.config.zFar, 0);
-			// 			if (ray.hitDistance == -1) {
-			// 				// lit
-			// 				directSunLight = (albedo * renderer.skyLightColor + ray.color.rgb * fresnel * surface.specular) * nDotL;
+			// 			traceRayEXT(tlas, gl_RayFlagsTerminateOnFirstHitEXT, ~(/* RAYTRACE_TYPE_WATER | */ RAYTRACE_TYPE_ATMOSPHERE), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, xenonRendererData.config.zNear, sunDir, xenonRendererData.config.zFar, 0);
+			// 			// lit
+			// 			if (RAY_IS_UNDERWATER) {
+			// 				directSunLight =  GetSunColor() * albedo * (1-ray.color.a);
+			// 			} else {
+			// 				directSunLight = GetSunColor() * (1-ray.color.a) * (albedo + fresnel * surface.specular) * nDotL;
 			// 			}
 			// 			ray = originalRay;
 			// 		RAY_SHADOW_POP
@@ -109,34 +111,34 @@ void main() {
 	}
 	ray.color = vec4(directSunLight, 1);
 	
-	bool useGi = false;
+	bool useGi = true;
 	
 	// Global Illumination
-	const float GI_MAX_DISTANCE = 2048;
+	const float GI_DRAW_MAX_DISTANCE = 200;
+	const float GI_RAY_MAX_DISTANCE = 2000;
 	const vec3 rayOrigin = ray.worldPosition + ray.normal * 0.001;
 	const vec3 facingWorldPosition = ray.worldPosition + ray.normal * 0.5;
 	const uint giIndex = GetGiIndex(facingWorldPosition, 0);
 	const uint giIndex1 = GetGiIndex(facingWorldPosition, 1);
 	seed += recursions * RAY_MAX_RECURSION;
-	if (useGi && ray.hitDistance < GI_MAX_DISTANCE && recursions < RAY_MAX_RECURSION && LockAmbientLighting(giIndex)) {
+	if (useGi && ray.hitDistance < GI_DRAW_MAX_DISTANCE && recursions < RAY_MAX_RECURSION && LockAmbientLighting(giIndex)) {
 		RayPayload originalRay = ray;
 		ray.color.rgb = vec3(0);
 		vec3 bounceDirection = normalize(originalRay.normal + RandomInUnitSphere(seed));
 		float nDotL = clamp(dot(originalRay.normal, bounceDirection), 0, 1);
 		RAY_RECURSION_PUSH
 			RAY_GI_PUSH
-				traceRayEXT(tlas, 0, ~(RAYTRACE_TYPE_WATER | RAYTRACE_TYPE_CLUTTER), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, 0, bounceDirection, GI_MAX_DISTANCE, 0);
+				traceRayEXT(tlas, 0, ~(RAYTRACE_TYPE_WATER | RAYTRACE_TYPE_CLUTTER), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, 0, bounceDirection, GI_RAY_MAX_DISTANCE, 0);
 			RAY_GI_POP
 		RAY_RECURSION_POP
-		ray.color.rgb *= nDotL;
-		// ray.color.rgb *= smoothstep(GI_MAX_DISTANCE, 0, ray.hitDistance);
+		ray.color.rgb *= nDotL / 3.1415;
 		WriteAmbientLighting(giIndex, facingWorldPosition, originalRay.normal, ray.color.rgb / 4);
 		UnlockAmbientLighting(giIndex);
 		ray = originalRay;
 	}
 	if (!rayIsGi && (xenonRendererData.config.options & RENDER_OPTION_ACCUMULATE) == 0) {
-		float giFactor = useGi ? smoothstep(GI_MAX_DISTANCE, 0, ray.hitDistance) : 0;
-		if (useGi && ray.hitDistance < GI_MAX_DISTANCE) ray.color.rgb += albedo * GetAmbientLighting(giIndex1, facingWorldPosition, vec3(0)/*thisSurface.posInVoxel*/, ray.normal) * giFactor;
+		float giFactor = useGi ? smoothstep(GI_DRAW_MAX_DISTANCE, 0, ray.hitDistance) : 0;
+		if (useGi && ray.hitDistance < GI_DRAW_MAX_DISTANCE) ray.color.rgb += albedo * GetAmbientLighting(giIndex1, facingWorldPosition, vec3(0)/*thisSurface.posInVoxel*/, ray.normal) * giFactor;
 		if (recursions < RAY_MAX_RECURSION) {
 			RayPayload originalRay = ray;
 			ray.color.rgb = vec3(0);
@@ -145,7 +147,7 @@ void main() {
 					traceRayEXT(tlas, 0, RAYTRACE_TYPE_ATMOSPHERE, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, 0, originalRay.normal, 10000, 0);
 				RAY_GI_POP
 			RAY_RECURSION_POP
-			originalRay.color.rgb += albedo * ray.color.rgb * (1-giFactor);
+			originalRay.color.rgb += albedo * ray.color.rgb * (1-giFactor) / 3.1415;
 			ray = originalRay;
 		}
 	}

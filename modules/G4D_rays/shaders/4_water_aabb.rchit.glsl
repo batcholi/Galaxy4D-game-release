@@ -3,10 +3,9 @@
 #include "common.inc.glsl"
 
 #define WATER_MAX_LIGHT_DEPTH 128
+#define WATER_MAX_LIGHT_DEPTH_VERTICAL 256
 #define WATER_IOR 1.33
-#define WATER_OPACITY 0.5
-#define WATER_TINT vec3(0.2,0.5,1.0)
-#define WATER_LIGHT (WATER_TINT)
+#define WATER_OPACITY 0.1
 
 layout(location = 0) rayPayloadInEXT RayPayload ray;
 
@@ -173,7 +172,7 @@ void main() {
 		// Underwater
 		vec3 downDir = normalize(spherePosition);
 		float dotUp = dot(gl_WorldRayDirectionEXT, -downDir);
-		float maxLightDepth = mix(WATER_MAX_LIGHT_DEPTH, 64, max(0, dotUp));
+		float maxLightDepth = mix(WATER_MAX_LIGHT_DEPTH, WATER_MAX_LIGHT_DEPTH_VERTICAL, max(0, dotUp));
 		
 		if (dotUp > 0) {
 			// Looking up towards surface
@@ -217,7 +216,7 @@ void main() {
 				ray.renderableIndex = -1;
 			}
 			float falloff = pow(1.0 - clamp(ray.hitDistance / maxLightDepth, 0, 1), 2);
-			ray.color.rgb *= WATER_TINT * falloff;
+			ray.color.rgb *= falloff;
 			
 		} else {
 			// See through water (underwater looking down)
@@ -238,7 +237,7 @@ void main() {
 				SetHitWater();
 			} else {
 				float falloff = pow(1.0 - clamp(ray.hitDistance / maxLightDepth, 0, 1), 2);
-				ray.color.rgb *= WATER_TINT * falloff;
+				ray.color.rgb *= falloff;
 			}
 			
 		}
@@ -248,9 +247,7 @@ void main() {
 		const vec3 dir = gl_WorldRayDirectionEXT;
 		const float distFactor = clamp(ray.hitDistance / maxLightDepth, 0 ,1);
 		const float fogStrength = max(WATER_OPACITY, pow(distFactor, 0.25));
-		const vec3 fogColor = WATER_LIGHT;
 		ray.color.rgb = mix(ray.color.rgb, vec3(0), pow(clamp(ray.hitDistance / maxLightDepth, 0, 1), 0.5));
-		ray.color.rgb = min(mix(normalize(fogColor), ray.color.rgb, 0.999), mix(ray.color.rgb, fogColor, fogStrength));
 		
 		RAY_UNDERWATER_PUSH
 	}
