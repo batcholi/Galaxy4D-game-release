@@ -93,7 +93,7 @@ struct RendererData {
 	aligned_f32vec3 sunDir;
 	aligned_uint32_t giIteration;
 	aligned_f32vec3 skyLightColor;
-	aligned_float32_t _unused;
+	aligned_float32_t warp;
 	aligned_f32vec3 wireframeColor;
 	aligned_float32_t wireframeThickness;
 	aligned_i32vec3 worldOrigin;

@@ -8,9 +8,14 @@ void main() {
 	const ivec2 pixelInMiddleOfScreen = ivec2(gl_LaunchSizeEXT.xy) / 2;
 	const bool isMiddleOfScreen = (COORDS == pixelInMiddleOfScreen);
 	const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
-	const vec2 uv = pixelCenter/vec2(gl_LaunchSizeEXT.xy);
+	const vec2 screenSize = vec2(gl_LaunchSizeEXT.xy);
+	const vec2 uv = pixelCenter/screenSize;
 	const vec3 initialRayPosition = inverse(renderer.viewMatrix)[3].xyz;
-	const vec3 initialRayDirection = normalize(VIEW2WORLDNORMAL * normalize(vec4(inverse(mat4(xenonRendererData.config.projectionMatrixWithTAA)) * vec4(uv*2-1, 1, 1)).xyz));
+	vec3 initialRayDirection = normalize(VIEW2WORLDNORMAL * normalize(vec4(inverse(mat4(xenonRendererData.config.projectionMatrixWithTAA)) * vec4(uv*2-1, 1, 1)).xyz));
+	if (renderer.warp > 0) {
+		vec2 center = (pixelCenter/screenSize-0.5) * vec2(screenSize.x / screenSize.y, 1);
+		initialRayDirection.xz = mix(initialRayDirection.xz, initialRayDirection.xz* pow(clamp(length(center), 0.08, 1), 2)*10 , renderer.warp);
+	}
 	
 	imageStore(rtPayloadImage, COORDS, u8vec4(0));
 	if (xenonRendererData.config.debugViewMode != 0) {
