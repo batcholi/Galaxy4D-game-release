@@ -15,8 +15,8 @@ void main() {
 	
 	// Warp drive
 	if (renderer.warp > 0) {
-		vec2 center = (pixelCenter/screenSize-0.5)*2 * vec2(screenSize.x / screenSize.y, 1);
-		viewDir.xy = mix(viewDir.xy, viewDir.xy* pow(clamp(length(center), 0.08, 1), 2)*10 , renderer.warp);
+		vec2 center = (pixelCenter/screenSize-0.5) * vec2(screenSize.x / screenSize.y, 1);
+		viewDir.xy = mix(viewDir.xy, viewDir.xy* pow(clamp(length(center), 0.08, 1), 2) , renderer.warp);
 	}
 	
 	vec3 initialRayDirection = normalize(VIEW2WORLDNORMAL * viewDir);
