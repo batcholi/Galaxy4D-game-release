@@ -1,23 +1,37 @@
+// uint InitRandomSeed(uint val0, uint val1) {
+// 	uint v0 = val0, v1 = val1, s0 = 0u;
+// 	for (uint n = 0u; n < 16u; n++) {
+// 		s0 += 0x9e3779b9u;
+// 		v0 += ((v1 << 4) + 0xa341316cu) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4u);
+// 		v1 += ((v0 << 4) + 0xad90777du) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761eu);
+// 	}
+// 	return v0;
+// }
+
+// uint GradUintHash(uvec3 p) {
+// 	return InitRandomSeed(p.x, InitRandomSeed(p.y, p.z));
+// }
+
 uint GradUintHash(uvec3 p) {
 	uint h = 8u, _;
 	h += p.x & 0xffffu;
-	_ = (((p.x >> 16) & 0xffffu) << 11) ^ h;
-	h = (h << 16) ^ _;
-	h += h >> 11;
+	_ = (((p.x >> 16u) & 0xffffu) << 11u) ^ h;
+	h = (h << 16u) ^ _;
+	h += h >> 11u;
 	h += p.y & 0xffffu;
-	_ = (((p.y >> 16) & 0xffffu) << 11) ^ h;
-	h = (h << 16) ^ _;
-	h += h >> 11;
+	_ = (((p.y >> 16u) & 0xffffu) << 11u) ^ h;
+	h = (h << 16u) ^ _;
+	h += h >> 11u;
 	h += p.z & 0xffffu;
-	_ = (((p.z >> 16) & 0xffffu) << 11) ^ h;
-	h = (h << 16) ^ _;
-	h += h >> 11;
-	h ^= h << 3;
-	h += h >> 5;
-	h ^= h << 4;
-	h += h >> 17;
-	h ^= h << 25;
-	h += h >> 6;
+	_ = (((p.z >> 16u) & 0xffffu) << 11u) ^ h;
+	h = (h << 16u) ^ _;
+	h += h >> 11u;
+	h ^= h << 3u;
+	h += h >> 5u;
+	h ^= h << 4u;
+	h += h >> 17u;
+	h ^= h << 25u;
+	h += h >> 6u;
 	return h;
 }
 
@@ -47,23 +61,27 @@ uint RidgedGradUint(in uvec3 pos, in uint stride, in uint maximum) {
 }
 
 void main() {
-	uint warpX = GradUint(uvec3(gl_FragCoord.xy, 0), 16u, 48u);
-	uint warpY = GradUint(uvec3(gl_FragCoord.xy, 0), 16u, 35u);
-	uint warpZ = GradUint(uvec3(gl_FragCoord.xy, 0), 16u, 41u);
+	uint top = 75536u;
+	uint warpX = 0u;//GradUint(uvec3(gl_FragCoord.xy, 0), 16u, 48u);
+	uint warpY = 0u;//GradUint(uvec3(gl_FragCoord.xy, 0), 16u, 35u);
+	uint warpZ = top;//GradUint(uvec3(gl_FragCoord.xy, 0), 16u, 41u);
 	uint value =
-		+ RidgedGradUint(uvec3(gl_FragCoord.xy + vec2(warpX, warpY), warpZ), 64u, 128u)
-		+ RidgedGradUint(uvec3(gl_FragCoord.xy + vec2(warpX, warpY)*1.5, warpZ), 32u, 64u)
-		+ RidgedGradUint(uvec3(gl_FragCoord.xy + vec2(warpX, warpY)*6.5, warpZ), 16u, 32u)
-		+ RidgedGradUint(uvec3(gl_FragCoord.xy, iGlobalTime*0.), 8u, 16u)
-		+ RidgedGradUint(uvec3(gl_FragCoord.xy, iGlobalTime*0.), 4u, 8u)
-		+ RidgedGradUint(uvec3(gl_FragCoord.xy, iGlobalTime*0.), 2u, 4u)
+		+ GradUint(uvec3(gl_FragCoord.xy*float(top)/16. + vec2(warpX, warpY), warpZ), top, top)
+		
+		// + RidgedGradUint(uvec3(gl_FragCoord.xy + vec2(warpX, warpY), warpZ), 64u, 128u)
+		// + RidgedGradUint(uvec3(gl_FragCoord.xy + vec2(warpX, warpY)*1.5, warpZ), 32u, 64u)
+		// + RidgedGradUint(uvec3(gl_FragCoord.xy + vec2(warpX, warpY)*6.5, warpZ), 16u, 32u)
+		// + RidgedGradUint(uvec3(gl_FragCoord.xy, iGlobalTime*0.), 8u, 16u)
+		// + RidgedGradUint(uvec3(gl_FragCoord.xy, iGlobalTime*0.), 4u, 8u)
+		// + RidgedGradUint(uvec3(gl_FragCoord.xy, iGlobalTime*0.), 2u, 4u)
 	;
 
 	gl_FragColor = vec4(vec3(value) / float(
+		+ top
 		// +128
-		+64
-		+32
-		+16
+		// +64
+		// +32
+		// +16
 		// +8
 		// +4
 	), 1);

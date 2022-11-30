@@ -9,12 +9,9 @@
 BUFFER_REFERENCE_STRUCT(4) ChunkBuffer {
 	aligned_f64mat4 transform;
 	aligned_f64mat4 inverseTransform;
-	aligned_int32_t baseRadiusCm;
-	aligned_int32_t heightVariationCm;
-	aligned_i32vec4 topLeftCm;
-	aligned_i32vec4 topRightCm;
-	aligned_i32vec4 bottomLeftCm;
-	aligned_i32vec4 bottomRightCm;
+	aligned_int64_t baseRadiusMm;
+	aligned_int64_t heightVariationMm;
+	aligned_float32_t skirtOffset;
 };
 
 BUFFER_REFERENCE_STRUCT(4) VertexBuffer {
