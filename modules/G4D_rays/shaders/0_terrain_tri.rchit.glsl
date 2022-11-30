@@ -111,7 +111,7 @@ void main() {
 	}
 	ray.color = vec4(directSunLight, 1);
 	
-	bool useGi = true;
+	bool useGi = false;
 	
 	// Global Illumination
 	const float GI_DRAW_MAX_DISTANCE = 200;
@@ -152,6 +152,10 @@ void main() {
 		}
 	}
 	
+	// Debug UV1
+	if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_UVS) {
+		if (RAY_RECURSIONS == 0) imageStore(img_normal_or_debug, COORDS, vec4(surface.uv1, 0, 1));
+	}
 	
 	// Debug Time
 	if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_RAYHIT_TIME) {

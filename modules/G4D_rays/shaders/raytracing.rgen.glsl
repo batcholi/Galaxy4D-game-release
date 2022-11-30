@@ -138,5 +138,7 @@ void main() {
 				imageStore(img_normal_or_debug, COORDS, vec4(gi, 1));
 			}
 			break;
+		case RENDERER_DEBUG_VIEWMODE_UVS:
+			break;
 	}
 }
