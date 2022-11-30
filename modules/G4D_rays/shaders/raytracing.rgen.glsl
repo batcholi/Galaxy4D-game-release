@@ -8,9 +8,18 @@ void main() {
 	const ivec2 pixelInMiddleOfScreen = ivec2(gl_LaunchSizeEXT.xy) / 2;
 	const bool isMiddleOfScreen = (COORDS == pixelInMiddleOfScreen);
 	const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
-	const vec2 uv = pixelCenter/vec2(gl_LaunchSizeEXT.xy);
+	const vec2 screenSize = vec2(gl_LaunchSizeEXT.xy);
+	const vec2 uv = pixelCenter/screenSize;
 	const vec3 initialRayPosition = inverse(renderer.viewMatrix)[3].xyz;
-	const vec3 initialRayDirection = normalize(VIEW2WORLDNORMAL * normalize(vec4(inverse(mat4(xenonRendererData.config.projectionMatrixWithTAA)) * vec4(uv*2-1, 1, 1)).xyz));
+	vec3 viewDir = normalize(vec4(inverse(mat4(xenonRendererData.config.projectionMatrixWithTAA)) * vec4(uv*2-1, 1, 1)).xyz);
+	
+	// Warp drive
+	if (renderer.warp > 0) {
+		vec2 center = (pixelCenter/screenSize-0.5) * vec2(screenSize.x / screenSize.y, 1);
+		viewDir.xy = mix(viewDir.xy, viewDir.xy* pow(clamp(length(center), 0.08, 1), 2) , renderer.warp);
+	}
+	
+	vec3 initialRayDirection = normalize(VIEW2WORLDNORMAL * viewDir);
 	
 	imageStore(rtPayloadImage, COORDS, u8vec4(0));
 	if (xenonRendererData.config.debugViewMode != 0) {
@@ -24,7 +33,7 @@ void main() {
 	traceRayEXT(tlas, 0/*flags*/, 0xff/*rayMask*/, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, initialRayPosition, xenonRendererData.config.zNear, initialRayDirection, xenonRendererData.config.zFar, 0/*payloadIndex*/);
 	vec4 color = ray.color;
 	
-	bool hitSomething = ray.hitDistance >= 0;
+	bool hitSomething = ray.hitDistance >= 0 && ray.renderableIndex != -1;
 	vec3 motion;
 	float depth;
 	
@@ -82,6 +91,7 @@ void main() {
 			imageStore(img_normal_or_debug, COORDS, vec4(ray.normal, ssaoStrength * ray.ssao));
 			break;
 		case RENDERER_DEBUG_VIEWMODE_NORMALS:
+			// imageStore(img_normal_or_debug, COORDS, vec4(max(vec3(0), ray.normal), 1));
 			imageStore(img_normal_or_debug, COORDS, vec4(normalize(WORLD2VIEWNORMAL * ray.normal), 1));
 			break;
 		case RENDERER_DEBUG_VIEWMODE_RAYGEN_TIME:
@@ -127,6 +137,8 @@ void main() {
 				vec3 gi = GetGi(GetGiIndex(ray.worldPosition + ray.normal * 0.5, 1)).radiance.rgb;
 				imageStore(img_normal_or_debug, COORDS, vec4(gi, 1));
 			}
+			break;
+		case RENDERER_DEBUG_VIEWMODE_UVS:
 			break;
 	}
 }

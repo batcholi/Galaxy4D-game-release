@@ -12,20 +12,7 @@ void main() {
 	// Copy to history BEFORE applying Tone Mapping
 	imageStore(img_history, compute_coord, color);
 	
-	// HDR ToneMapping (Reinhard)
-	if ((xenonRendererData.config.options & RENDER_OPTION_TONE_MAPPING) != 0) {
-		float lumRgbTotal = xenonRendererData.histogram_avg_luminance.r + xenonRendererData.histogram_avg_luminance.g + xenonRendererData.histogram_avg_luminance.b;
-		float exposure = lumRgbTotal > 0 ? xenonRendererData.histogram_avg_luminance.a / lumRgbTotal : 1;
-		color.rgb = vec3(1.0) - exp(-color.rgb * clamp(exposure, xenonRendererData.config.minExposure, xenonRendererData.config.maxExposure));
-	}
+	ApplyToneMapping(color);
 	
-	// Contrast / Brightness
-	if (xenonRendererData.config.contrast != 1.0 || xenonRendererData.config.brightness != 1.0) {
-		color.rgb = mix(vec3(0.5), color.rgb, xenonRendererData.config.contrast) * xenonRendererData.config.brightness;
-	}
-	
-	// Gamma correction
-	color.rgb = pow(color.rgb, vec3(1.0 / xenonRendererData.config.gamma));
-	
-	imageStore(img_resolved, compute_coord, vec4(clamp(color.rgb, vec3(0), vec3(1)), 0/*component available for future use*/));
+	imageStore(img_resolved, compute_coord, vec4(clamp(color.rgb, vec3(0), vec3(1)), imageLoad(img_composite, compute_coord).a));
 }

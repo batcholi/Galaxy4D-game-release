@@ -9,7 +9,7 @@
 #endif
 
 #include "game/graphics/common.inc.glsl"
-// #include "game/graphics/voxel.inc.glsl"
+#include "game/graphics/voxel.inc.glsl"
 
 #define RAY_MAX_RECURSION 8
 
@@ -93,7 +93,7 @@ struct RendererData {
 	aligned_f32vec3 sunDir;
 	aligned_uint32_t giIteration;
 	aligned_f32vec3 skyLightColor;
-	aligned_float32_t _unused;
+	aligned_float32_t warp;
 	aligned_f32vec3 wireframeColor;
 	aligned_float32_t wireframeThickness;
 	aligned_i32vec3 worldOrigin;
@@ -112,6 +112,7 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 	#define AABB_CENTER ((AABB_MIN + AABB_MAX) * 0.5)
 	#define AABB_CENTER_INT ivec3(round(AABB_CENTER))
 	#define MODELVIEW (renderer.viewMatrix * mat4(gl_ObjectToWorldEXT))
+	#define MODEL2WORLDNORMAL inverse(transpose(mat3(gl_ObjectToWorldEXT)))
 	#define MVP (xenonRendererData.config.projectionMatrix * MODELVIEW)
 	#define MVP_AA (xenonRendererData.config.projectionMatrixWithTAA * MODELVIEW)
 	#define MVP_HISTORY (xenonRendererData.config.projectionMatrix * MODELVIEW_HISTORY)
@@ -139,6 +140,9 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 	#define RAY_IS_GI (imageLoad(rtPayloadImage, COORDS).b > 0)
 	#define RAY_GI_PUSH imageStore(rtPayloadImage, COORDS, imageLoad(rtPayloadImage, COORDS) + u8vec4(0,0,1,0));
 	#define RAY_GI_POP imageStore(rtPayloadImage, COORDS, imageLoad(rtPayloadImage, COORDS) - u8vec4(0,0,1,0));
+	#define RAY_IS_UNDERWATER (imageLoad(rtPayloadImage, COORDS).a > 0)
+	#define RAY_UNDERWATER_PUSH imageStore(rtPayloadImage, COORDS, imageLoad(rtPayloadImage, COORDS) + u8vec4(0,0,0,1));
+	#define RAY_UNDERWATER_POP imageStore(rtPayloadImage, COORDS, imageLoad(rtPayloadImage, COORDS) - u8vec4(0,0,0,1));
 
 	layout(set = 1, binding = SET1_BINDING_RENDERER_DATA) buffer RendererDataBuffer { RendererData renderer; };
 	layout(set = 1, binding = SET1_BINDING_RT_PAYLOAD_IMAGE, rgba8ui) uniform uimage2D rtPayloadImage; // Recursions, Shadow, Gi, Underwater
@@ -298,8 +302,6 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 		}
 	#endif
 	
-	#include "noise.inc.glsl"
-
 	struct RayPayload {
 		vec4 color;
 		vec3 normal;
@@ -329,7 +331,12 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 			return vec3(1.9f,1.1f,0.1f) * pow(1-abs(t), 4);
 		}
 		vec3 GetSunColor() {
-			return renderer.skyLightColor * (RAY_IS_GI? vec3(0.75,0.9,1.3) : vec3(0.5,0.6,1.5));
+			float distance = 1.5e11;
+			vec3 position = renderer.sunDir * distance;
+			float radius = 700000000;
+			vec3 color = vec3(1);
+			float surfaceTemperature = 5778;
+			return color * GetSunRadiationAtDistanceSqr(surfaceTemperature, radius, distance*distance);
 		}
 	#endif
 
@@ -337,7 +344,7 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 		#extension GL_EXT_ray_query : require
 		bool rayQuerySunlight(in vec3 origin, in vec3 direction) {
 			rayQueryEXT q;
-			rayQueryInitializeEXT(q, tlas, gl_RayFlagsTerminateOnFirstHitEXT, 0xff, origin, xenonRendererData.config.zNear, direction, xenonRendererData.config.zFar);
+			rayQueryInitializeEXT(q, tlas, gl_RayFlagsTerminateOnFirstHitEXT, ~(RAYTRACE_TYPE_WATER | RAYTRACE_TYPE_ATMOSPHERE | RAYTRACE_TYPE_CLUTTER), origin, xenonRendererData.config.zNear, direction, xenonRendererData.config.zFar);
 			while (rayQueryProceedEXT(q)) {
 				rayQueryConfirmIntersectionEXT(q);
 			}
@@ -345,31 +352,31 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 		}
 	#endif
 
-	// #if defined(SHADER_RCHIT) || defined(SHADER_RAHIT) || defined(SHADER_RINT)
-	// 	bool IsValidVoxel(in ivec3 iPos, in vec3 gridOffset) {
-	// 		if (iPos.x < 0 || iPos.y < 0 || iPos.z < 0) return false;
-	// 		if (iPos.x >= VOXELS_X || iPos.y >= VOXELS_Y || iPos.z >= VOXELS_Z) return false;
-	// 		if (iPos.x < AABB_MIN.x - gridOffset.x) return false;
-	// 		if (iPos.y < AABB_MIN.y - gridOffset.y) return false;
-	// 		if (iPos.z < AABB_MIN.z - gridOffset.z) return false;
-	// 		if (iPos.x >= AABB_MAX.x - gridOffset.x) return false;
-	// 		if (iPos.y >= AABB_MAX.y - gridOffset.y) return false;
-	// 		if (iPos.z >= AABB_MAX.z - gridOffset.z) return false;
-	// 		return true;
-	// 	}
-	// 	bool IsValidVoxelHD(in ivec3 iPos) {
-	// 		if (iPos.x < 0 || iPos.y < 0 || iPos.z < 0) return false;
-	// 		if (iPos.x >= VOXEL_GRID_SIZE_HD || iPos.y >= VOXEL_GRID_SIZE_HD || iPos.z >= VOXEL_GRID_SIZE_HD) return false;
-	// 		return true;
-	// 	}
-	// 	const vec3[7] BOX_NORMAL_DIRS = {
-	// 		vec3(-1,0,0),
-	// 		vec3(0,-1,0),
-	// 		vec3(0,0,-1),
-	// 		vec3(+1,0,0),
-	// 		vec3(0,+1,0),
-	// 		vec3(0,0,+1),
-	// 		vec3(0)
-	// 	};
-	// #endif
+	#if defined(SHADER_RCHIT) || defined(SHADER_RAHIT) || defined(SHADER_RINT)
+		bool IsValidVoxel(in ivec3 iPos, in vec3 gridOffset) {
+			if (iPos.x < 0 || iPos.y < 0 || iPos.z < 0) return false;
+			if (iPos.x >= VOXELS_X || iPos.y >= VOXELS_Y || iPos.z >= VOXELS_Z) return false;
+			if (iPos.x < AABB_MIN.x - gridOffset.x) return false;
+			if (iPos.y < AABB_MIN.y - gridOffset.y) return false;
+			if (iPos.z < AABB_MIN.z - gridOffset.z) return false;
+			if (iPos.x >= AABB_MAX.x - gridOffset.x) return false;
+			if (iPos.y >= AABB_MAX.y - gridOffset.y) return false;
+			if (iPos.z >= AABB_MAX.z - gridOffset.z) return false;
+			return true;
+		}
+		bool IsValidVoxelHD(in ivec3 iPos) {
+			if (iPos.x < 0 || iPos.y < 0 || iPos.z < 0) return false;
+			if (iPos.x >= VOXEL_GRID_SIZE_HD || iPos.y >= VOXEL_GRID_SIZE_HD || iPos.z >= VOXEL_GRID_SIZE_HD) return false;
+			return true;
+		}
+		const vec3[7] BOX_NORMAL_DIRS = {
+			vec3(-1,0,0),
+			vec3(0,-1,0),
+			vec3(0,0,-1),
+			vec3(+1,0,0),
+			vec3(0,+1,0),
+			vec3(0,0,+1),
+			vec3(0)
+		};
+	#endif
 #endif
