@@ -17,12 +17,12 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 	
 	UVEC3 warp = UVEC3(GradUint(pos, 65000, 65000, 8), GradUint(pos, 65000, 65000, 8), GradUint(pos, 65000, 65000, 12));
 	
-	INT mountains = INT(RidgedGradUint(pos + warp, 100000, 10000, 8));
-	INT detail = INT(GradUint(pos/2u, 400, 160, 2));
+	// INT mountains = INT(RidgedGradUint(pos + warp, 100000, 10000, 8));
+	// INT detail = INT(GradUint(pos/2u, 400, 160, 2));
 	
 	INT heightInt = baseHeight
-		+ mountains
-		+ detail
+		// + mountains
+		// + detail
 	;
 	return double(heightInt) / double(TERRAIN_INT_MULTIPLIER);
 }
