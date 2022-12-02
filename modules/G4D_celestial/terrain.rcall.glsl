@@ -10,5 +10,5 @@ float BumpMap(vec3 pos) {
 
 void main() {
 	surface.color.rgb = vec3(224.0/255, 185.0/255, 120.0/255);
-	APPLY_NORMAL_BUMP_NOISE(BumpMap, surface.localPosition, surface.normal, 0.002)
+	APPLY_NORMAL_BUMP_NOISE(BumpMap, surface.localPosition, surface.normal, 0.005)
 }
