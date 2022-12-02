@@ -10,5 +10,8 @@ float BumpMap(vec3 pos) {
 
 void main() {
 	surface.color.rgb = vec3(224.0/255, 185.0/255, 120.0/255);
-	APPLY_NORMAL_BUMP_NOISE(BumpMap, surface.localPosition, surface.normal, 0.003)
+	if (surface.distance < 500) {
+		float strength = 0.003 * smoothstep(500, 0, surface.distance);
+		APPLY_NORMAL_BUMP_NOISE(BumpMap, surface.localPosition, surface.normal, strength)
+	}
 }
