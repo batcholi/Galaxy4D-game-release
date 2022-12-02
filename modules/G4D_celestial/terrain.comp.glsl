@@ -15,10 +15,10 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 	
 	INT baseHeight = INT(PLANET_BASE_RADIUS_INT + PLANET_HEIGHT_VARIATION_INT);
 	
-	UVEC3 warp = UVEC3(GradUint(pos, 65000, 65000, 8), GradUint(pos, 65000, 65000, 8), GradUint(pos, 65000, 65000, 8));
+	UVEC3 warp = UVEC3(GradUint(pos, 65000, 65000, 8), GradUint(pos, 65000, 65000, 8), GradUint(pos, 65000, 65000, 12));
 	
-	INT mountains = INT(RidgedGradUint(pos + warp, 100000, 10000, 4));
-	INT detail = INT(GradUint(pos, 400, 160, 4));
+	INT mountains = INT(RidgedGradUint(pos + warp, 100000, 10000, 8));
+	INT detail = INT(GradUint(pos/2u, 400, 160, 2));
 	
 	INT heightInt = baseHeight
 		+ mountains
@@ -68,9 +68,9 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 			}
 			if (skirtIndex != -1) {
 				vertices[(computeSize*computeSize + skirtIndex) * 3 + 1].vertex = vertices[Yindex].vertex - chunk.skirtOffset;
-				normals[(computeSize*computeSize + skirtIndex) * 3 + 0].normal = 0.0f;
-				normals[(computeSize*computeSize + skirtIndex) * 3 + 1].normal = 1.0f;
-				normals[(computeSize*computeSize + skirtIndex) * 3 + 2].normal = 0.0f;
+				// normals[(computeSize*computeSize + skirtIndex) * 3 + 0].normal = 0.0f;
+				// normals[(computeSize*computeSize + skirtIndex) * 3 + 1].normal = 1.0f;
+				// normals[(computeSize*computeSize + skirtIndex) * 3 + 2].normal = 0.0f;
 			}
 		#endif
 	}
