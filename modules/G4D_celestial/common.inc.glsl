@@ -14,13 +14,20 @@ BUFFER_REFERENCE_STRUCT(4) ChunkBuffer {
 	aligned_int32_t baseRadiusInt;
 	aligned_int32_t heightVariationInt;
 	aligned_float32_t skirtOffset;
+	aligned_int32_t topSign;
+	aligned_int32_t rightSign;
 };
 
 BUFFER_REFERENCE_STRUCT(4) VertexBuffer {
 	float vertex;
 };
 
+BUFFER_REFERENCE_STRUCT(4) NormalBuffer {
+	float normal;
+};
+
 PUSH_CONSTANT_STRUCT TerrainChunkPushConstant {
 	BUFFER_REFERENCE_ADDR(ChunkBuffer) chunk;
 	BUFFER_REFERENCE_ADDR(VertexBuffer) vertices;
+	BUFFER_REFERENCE_ADDR(NormalBuffer) normals;
 };

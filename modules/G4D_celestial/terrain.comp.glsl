@@ -44,13 +44,13 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 	uint32_t Yindex = currentIndex*3+1;
 	
 	void main() {
-		// #ifdef SHADER_COMPUTE_TERRAIN_NORMAL
-		// 	// Normal
-		// 	vec3 normal = ComputeNormal();
-		// 	normals[currentIndex*3].normal = normal.x;
-		// 	normals[currentIndex*3+1].normal = normal.y;
-		// 	normals[currentIndex*3+2].normal = normal.z;
-		// #else
+		#ifdef SHADER_COMPUTE_TERRAIN_NORMAL
+			// Normal
+			vec3 normal = ComputeNormal();
+			normals[currentIndex*3].normal = normal.x;
+			normals[currentIndex*3+1].normal = normal.y;
+			normals[currentIndex*3+2].normal = normal.z;
+		#else
 			// Vertex
 			dvec3 posNorm = normalize((chunk.transform * dvec4(GetVertex(currentIndex), 1)).xyz);
 			dvec3 finalPos = (chunk.inverseTransform * dvec4(posNorm * TerrainHeightMap(posNorm), 1)).xyz;
@@ -68,10 +68,10 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 			}
 			if (skirtIndex != -1) {
 				vertices[(computeSize*computeSize + skirtIndex) * 3 + 1].vertex = vertices[Yindex].vertex - chunk.skirtOffset;
-				// normals[(computeSize*computeSize + skirtIndex) * 3 + 0].normal = 0.0f;
-				// normals[(computeSize*computeSize + skirtIndex) * 3 + 1].normal = 1.0f;
-				// normals[(computeSize*computeSize + skirtIndex) * 3 + 2].normal = 0.0f;
+				normals[(computeSize*computeSize + skirtIndex) * 3 + 0].normal = 0.0f;
+				normals[(computeSize*computeSize + skirtIndex) * 3 + 1].normal = 1.0f;
+				normals[(computeSize*computeSize + skirtIndex) * 3 + 2].normal = 0.0f;
 			}
-		// #endif
+		#endif
 	}
 #endif
