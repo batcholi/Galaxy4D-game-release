@@ -6,7 +6,7 @@
 #define COMPUTE_SIZE_X 16
 #define COMPUTE_SIZE_Y 16
 
-#define TERRAIN_INT_MULTIPLIER 10
+#define TERRAIN_INT_MULTIPLIER 100
 
 BUFFER_REFERENCE_STRUCT(4) ChunkBuffer {
 	aligned_f64mat4 transform;

@@ -1,5 +1,5 @@
 #include "common.inc.glsl"
-#include "xenon/renderer/shaders/GradUint.glsl"
+#include "xenon/renderer/shaders/perlint.glsl"
 
 #ifdef GLSL
 	#define PLANET_BASE_RADIUS_INT chunk.baseRadiusInt
@@ -15,13 +15,13 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 	
 	INT baseHeight = INT(PLANET_BASE_RADIUS_INT + PLANET_HEIGHT_VARIATION_INT);
 	
-	UVEC3 warp = UVEC3(GradUint(pos, 65000, 65000, 8), GradUint(pos, 65000, 65000, 8), GradUint(pos, 65000, 65000, 12));
+	UVEC3 warp = UVEC3(perlint(pos, 65000, 25000, 8), perlint(pos, 65000, 25000, 8), perlint(pos, 60000, 25000, 12));
 	
-	// INT mountains = INT(RidgedGradUint(pos + warp, 100000, 10000, 8));
-	// INT detail = INT(GradUint(pos/2u, 400, 160, 2));
+	INT mountains = INT(perlintRidged(pos + warp, 65500, 9500, 8));
+	// INT detail = INT(perlint(pos/2u, 400, 160, 2));
 	
 	INT heightInt = baseHeight
-		// + mountains
+		+ mountains
 		// + detail
 	;
 	return double(heightInt) / double(TERRAIN_INT_MULTIPLIER);
