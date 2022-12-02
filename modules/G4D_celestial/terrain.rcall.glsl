@@ -5,7 +5,7 @@
 #include "xenon/renderer/shaders/perlint.glsl"
 
 float BumpMap(vec3 pos) {
-	return SimplexFractal(pos*4, 5) + abs(SimplexFractal(pos*0.1, 5)) * 50;
+	return SimplexFractal(pos*5, 4) + abs(SimplexFractal(pos*0.2, 3)) * 10;
 }
 
 void main() {

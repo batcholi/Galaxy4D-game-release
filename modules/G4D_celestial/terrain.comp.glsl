@@ -15,9 +15,9 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 	
 	INT baseHeight = INT(PLANET_BASE_RADIUS_INT + PLANET_HEIGHT_VARIATION_INT);
 	
-	UVEC3 warp = UVEC3(perlint(pos, 65000, 25000, 8), perlint(pos, 65000, 25000, 8), perlint(pos, 60000, 25000, 8));
+	UVEC3 warp = UVEC3(perlint(pos, 65000, 30000, 8), perlint(pos, 65000, 30000, 8), perlint(pos, 60000, 30000, 8));
 	
-	INT mountains = INT(perlintRidged(pos + warp, 65500, 9500, 8));
+	INT mountains = INT(perlintRidged(pos + warp, 65500, 9000, 8));
 	// INT detail = INT(perlint(pos/2u, 400, 160, 2));
 	
 	INT heightInt = baseHeight
