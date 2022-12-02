@@ -3,7 +3,7 @@
 #endif
 // Integer Gradient Noise (by Olivier St-Laurent)
 
-#define USE_64_BIT_INTS
+// #define USE_64_BIT_INTS
 
 #ifdef USE_64_BIT_INTS
 	#define INT int64_t
