@@ -2,7 +2,13 @@
 
 #define SHADER_SURFACE
 #include "game/graphics/common.inc.glsl"
+#include "xenon/renderer/shaders/perlint.glsl"
+
+float BumpMap(vec3 pos) {
+	return SimplexFractal(pos*4, 5);
+}
 
 void main() {
 	surface.color.rgb = vec3(224.0/255, 185.0/255, 120.0/255);
+	APPLY_NORMAL_BUMP_NOISE(BumpMap, surface.localPosition, surface.normal, 0.002)
 }
