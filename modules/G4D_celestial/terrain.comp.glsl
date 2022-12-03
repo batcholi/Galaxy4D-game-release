@@ -15,14 +15,14 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 	
 	int32_t baseHeight = int32_t(PLANET_BASE_RADIUS_INT);
 	
-	u32vec3 warp = u32vec3(perlint32(pos, 65000, 30000, 8), perlint32(pos, 65000, 30000, 8), perlint32(pos, 60000, 30000, 8));
+	u32vec3 warp = u32vec3(perlint64(pos, 800000, 3000000, 3), perlint64(pos, 800000, 3000000, 3), perlint64(pos, 800000, 3000000, 3));
 	
-	int32_t continents = min(250000, int32_t(perlint64Ridged(i64vec3(pos + warp*100u), 50000000, 500000, 6)));
-	// int32_t smallMountains = int32_t(perlint32Ridged(pos + warp, 65500, 9000, 8));
+	int32_t continents = int32_t(perlint64Ridged(i64vec3(pos + warp), 30000000, 500000, 4));
+	int32_t smallMountains = int32_t(perlint32Ridged(pos + warp/10u, 65500, 9000, 8));
 	
 	int32_t heightInt = baseHeight
 		+ continents
-		// + smallMountains
+		+ smallMountains
 	;
 	return double(heightInt) / double(TERRAIN_INT_MULTIPLIER);
 }
