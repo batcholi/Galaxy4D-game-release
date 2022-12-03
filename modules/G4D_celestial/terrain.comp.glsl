@@ -13,16 +13,16 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 /*double TerrainHeightMap(normalizedPos)*/{
 	u32vec3 pos = u32vec3(normalizedPos * PLANET_BASE_RADIUS_INT + 2000000000.0);
 	
-	int32_t baseHeight = int32_t(PLANET_BASE_RADIUS_INT + PLANET_HEIGHT_VARIATION_INT);
+	int32_t baseHeight = int32_t(PLANET_BASE_RADIUS_INT);
 	
 	u32vec3 warp = u32vec3(perlint32(pos, 65000, 30000, 8), perlint32(pos, 65000, 30000, 8), perlint32(pos, 60000, 30000, 8));
 	
-	// int32_t bigMountains = int32_t(perlint32Ridged(pos + warp, 65500, 9000, 8));
-	int32_t smallMountains = int32_t(perlint32Ridged(pos + warp, 65500, 9000, 8));
+	int32_t continents = min(250000, int32_t(perlint64Ridged(i64vec3(pos + warp*100u), 50000000, 500000, 6)));
+	// int32_t smallMountains = int32_t(perlint32Ridged(pos + warp, 65500, 9000, 8));
 	
 	int32_t heightInt = baseHeight
-		// + bigMountains
-		+ smallMountains
+		+ continents
+		// + smallMountains
 	;
 	return double(heightInt) / double(TERRAIN_INT_MULTIPLIER);
 }
@@ -41,20 +41,24 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 	uint32_t genCol = gl_GlobalInvocationID.x;
 	uint32_t genRow = gl_GlobalInvocationID.y;
 	uint32_t currentIndex = computeSize * genRow + genCol;
+	uint32_t Xindex = currentIndex*3;
 	uint32_t Yindex = currentIndex*3+1;
+	uint32_t Zindex = currentIndex*3+2;
 	
 	void main() {
 		#ifdef SHADER_COMPUTE_TERRAIN_NORMAL
 			// Normal
 			vec3 normal = ComputeNormal();
-			normals[currentIndex*3].normal = normal.x;
-			normals[currentIndex*3+1].normal = normal.y;
-			normals[currentIndex*3+2].normal = normal.z;
+			normals[Xindex].normal = normal.x;
+			normals[Yindex].normal = normal.y;
+			normals[Zindex].normal = normal.z;
 		#else
 			// Vertex
 			dvec3 posNorm = normalize((chunk.transform * dvec4(GetVertex(currentIndex), 1)).xyz);
 			dvec3 finalPos = (chunk.inverseTransform * dvec4(posNorm * TerrainHeightMap(posNorm), 1)).xyz;
+			vertices[Xindex].vertex = float(finalPos.x);
 			vertices[Yindex].vertex = float(finalPos.y);
+			vertices[Zindex].vertex = float(finalPos.z);
 			// Skirt
 			int32_t skirtIndex = -1;
 			if (genCol == 0) {
