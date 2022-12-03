@@ -11,18 +11,18 @@ double TerrainHeightMap(dvec3 normalizedPos)
 static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius, double terrainHeightVariation)
 #endif
 /*double TerrainHeightMap(normalizedPos)*/{
-	UVEC3 pos = UVEC3(normalizedPos * PLANET_BASE_RADIUS_INT + 2000000000.0);
+	u32vec3 pos = u32vec3(normalizedPos * PLANET_BASE_RADIUS_INT + 2000000000.0);
 	
-	INT baseHeight = INT(PLANET_BASE_RADIUS_INT + PLANET_HEIGHT_VARIATION_INT);
+	int32_t baseHeight = int32_t(PLANET_BASE_RADIUS_INT + PLANET_HEIGHT_VARIATION_INT);
 	
-	UVEC3 warp = UVEC3(perlint(pos, 65000, 30000, 8), perlint(pos, 65000, 30000, 8), perlint(pos, 60000, 30000, 8));
+	u32vec3 warp = u32vec3(perlint32(pos, 65000, 30000, 8), perlint32(pos, 65000, 30000, 8), perlint32(pos, 60000, 30000, 8));
 	
-	INT mountains = INT(perlintRidged(pos + warp, 65500, 9000, 8));
-	// INT detail = INT(perlint(pos/2u, 400, 160, 2));
+	// int32_t bigMountains = int32_t(perlint32Ridged(pos + warp, 65500, 9000, 8));
+	int32_t smallMountains = int32_t(perlint32Ridged(pos + warp, 65500, 9000, 8));
 	
-	INT heightInt = baseHeight
-		+ mountains
-		// + detail
+	int32_t heightInt = baseHeight
+		// + bigMountains
+		+ smallMountains
 	;
 	return double(heightInt) / double(TERRAIN_INT_MULTIPLIER);
 }
@@ -68,9 +68,9 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 			}
 			if (skirtIndex != -1) {
 				vertices[(computeSize*computeSize + skirtIndex) * 3 + 1].vertex = vertices[Yindex].vertex - chunk.skirtOffset;
-				// normals[(computeSize*computeSize + skirtIndex) * 3 + 0].normal = 0.0f;
-				// normals[(computeSize*computeSize + skirtIndex) * 3 + 1].normal = 1.0f;
-				// normals[(computeSize*computeSize + skirtIndex) * 3 + 2].normal = 0.0f;
+				normals[(computeSize*computeSize + skirtIndex) * 3 + 0].normal = 0.0f;
+				normals[(computeSize*computeSize + skirtIndex) * 3 + 1].normal = 1.0f;
+				normals[(computeSize*computeSize + skirtIndex) * 3 + 2].normal = 0.0f;
 			}
 		#endif
 	}
