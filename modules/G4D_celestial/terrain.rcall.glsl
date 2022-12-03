@@ -12,36 +12,35 @@ float Sand(vec3 pos) {
 }
 
 float Rock(vec3 pos) {
-	return 
-	 + (clamp(pow(abs(SimplexFractal(pos*2, 7)), 0.8), 0.2, 0.4)) * (clamp(abs(SimplexFractal(pos*2+16.26, 4)), 0.2, 0.5)) * 6
-	 + SimplexFractal(pos*12, 4) * 0.2
-	 - pow(abs(SimplexFractal(pos*2+265.45, 4)), 0.7) * 0.5
-	 - pow(abs(SimplexFractal(pos*2-173.15, 4)), 0.7) * 0.5
-	;
+	return clamp(
+		+ (clamp(pow(abs(SimplexFractal(pos*2, 4)), 0.8), 0.2, 0.4)) * (clamp(abs(SimplexFractal(pos*2+16.26, 3)), 0.2, 0.5)) * 6
+		+ SimplexFractal(pos*10, 4) * 0.2
+		- 0.5
+	, -0.3, 0.8)*5;
 }
 
-#define BUMP(_noiseFunc, _position, _normal, _waveHeight) {\
-	vec3 _tangentX = normalize(cross(normalize(vec3(0.356,1.2145,0.24537))/* fixed arbitrary vector in object space */, _normal));\
-	vec3 _tangentY = normalize(cross(_normal, _tangentX));\
-	mat3 _TBN = mat3(_tangentX, _tangentY, _normal);\
-	float _altitudeTop = _noiseFunc(_position + _tangentY*_waveHeight);\
-	float _altitudeBottom = _noiseFunc(_position - _tangentY*_waveHeight);\
-	float _altitudeRight = _noiseFunc(_position + _tangentX*_waveHeight);\
-	float _altitudeLeft = _noiseFunc(_position - _tangentX*_waveHeight);\
-	vec3 _bump = normalize(vec3((_altitudeRight-_altitudeLeft), (_altitudeBottom-_altitudeTop), 2));\
-	_normal = normalize(_TBN * _bump);\
+#define BUMP(_noiseFunc, _position, _normal, _waveLength) {\
+	vec3 _tangentY = normalize(cross(_normal, vec3(1,0,0)));\
+	vec3 _tangentX = cross(_normal, _tangentY);\
+	float _altitudeTop = _noiseFunc(_position + _tangentY*_waveLength);\
+	float _altitudeBottom = _noiseFunc(_position - _tangentY*_waveLength);\
+	float _altitudeRight = _noiseFunc(_position + _tangentX*_waveLength);\
+	float _altitudeLeft = _noiseFunc(_position - _tangentX*_waveLength);\
+	vec3 _bump = normalize(vec3((_altitudeRight-_altitudeLeft), 2, (_altitudeBottom-_altitudeTop)));\
+	_normal = normalize(_bump);\
 }
 
 void main() {
 	surface.color.rgb = rockColor;
 	if (surface.distance < 500) {
 		float strength = smoothstep(500, 0, surface.distance);
+		float waveLength = 0.003 * strength;
 		float height = Rock(surface.localPosition);
 		if (height > 0.0) {
-			BUMP(Rock, surface.localPosition, surface.normal, 0.003 * strength)
+			BUMP(Rock, surface.localPosition, surface.normal, waveLength)
 		} else {
 			surface.color.rgb = mix(surface.color.rgb, sandColor, strength);
-			BUMP(Sand, surface.localPosition, surface.normal, 0.003 * strength)
+			BUMP(Sand, surface.localPosition, surface.normal, waveLength)
 		}
 	}
 }
