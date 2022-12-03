@@ -13,8 +13,11 @@ float Sand(vec3 pos) {
 
 float Rock(vec3 pos) {
 	return 
-	 + (1 - clamp(pow(abs(SimplexFractal(pos*2, 4)), 0.8), 0.2, 0.4)) * (1 - clamp(abs(SimplexFractal(pos*2+16.26, 2)), 0.2, 0.5)) * 6
+	 + (1 - clamp(pow(abs(SimplexFractal(pos*2, 6)), 0.8), 0.2, 0.4)) * (1 - clamp(abs(SimplexFractal(pos*2+16.26, 3)), 0.2, 0.5)) * 6
 	 + SimplexFractal(pos*12, 2) * 0.2
+	 - pow(abs(SimplexFractal(pos*2+265.45, 5)), 0.7) * 0.8
+	 - pow(abs(SimplexFractal(pos*2-173.15, 5)), 0.7) * 0.8
+	 - pow(abs(SimplexFractal(pos*2+814.87, 5)), 0.7) * 0.8
 	;
 }
 
