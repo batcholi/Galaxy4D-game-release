@@ -13,11 +13,10 @@ float Sand(vec3 pos) {
 
 float Rock(vec3 pos) {
 	return 
-	 + (1 - clamp(pow(abs(SimplexFractal(pos*2, 6)), 0.8), 0.2, 0.4)) * (1 - clamp(abs(SimplexFractal(pos*2+16.26, 3)), 0.2, 0.5)) * 6
+	 + (clamp(pow(abs(SimplexFractal(pos*2, 5)), 0.8), 0.2, 0.4)) * (clamp(abs(SimplexFractal(pos*2+16.26, 3)), 0.2, 0.5)) * 6
 	 + SimplexFractal(pos*12, 2) * 0.2
-	 - pow(abs(SimplexFractal(pos*2+265.45, 5)), 0.7) * 0.8
-	 - pow(abs(SimplexFractal(pos*2-173.15, 5)), 0.7) * 0.8
-	 - pow(abs(SimplexFractal(pos*2+814.87, 5)), 0.7) * 0.8
+	 - pow(abs(SimplexFractal(pos*2+265.45, 3)), 0.7) * 0.5
+	 - pow(abs(SimplexFractal(pos*2-173.15, 3)), 0.7) * 0.5
 	;
 }
 
@@ -37,6 +36,12 @@ void main() {
 	surface.color.rgb = rockColor;
 	if (surface.distance < 500) {
 		float strength = 0.003 * smoothstep(500, 0, surface.distance);
-		BUMP(Rock, surface.localPosition, surface.normal, strength)
+		float height = Rock(surface.localPosition);
+		if (height > 0.0) {
+			BUMP(Rock, surface.localPosition, surface.normal, strength)
+		} else {
+			surface.color.rgb = mix(surface.color.rgb, sandColor, strength);
+			BUMP(Sand, surface.localPosition, surface.normal, strength)
+		}
 	}
 }
