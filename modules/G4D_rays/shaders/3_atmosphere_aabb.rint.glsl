@@ -7,7 +7,6 @@ hitAttributeEXT hit {
 };
 
 void main() {
-	return;
 	AtmosphereData atmosphere = AtmosphereData(AABB.data);
 	if (uint64_t(atmosphere) == 0) return;
 	const vec3 spherePosition = gl_ObjectToWorldEXT[3].xyz;

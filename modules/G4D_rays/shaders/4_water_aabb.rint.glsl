@@ -8,7 +8,6 @@ hitAttributeEXT hit {
 };
 
 void main() {
-	return;
 	WaterData water = WaterData(AABB.data);
 	if (uint64_t(water) == 0) return;
 	
