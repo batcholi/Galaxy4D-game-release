@@ -14,7 +14,7 @@ void main() {
 	ray.geometryIndex = -1;
 	ray.primitiveIndex = -1;
 	
-	ray.color = vec4(10);
+	ray.color = vec4(0);
 	
 	// vec3 sunColor = GetSunColor();
 	// ray.color = vec4(sunColor, 1);
