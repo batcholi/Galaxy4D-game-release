@@ -120,7 +120,7 @@ void main() {
 		float nDotL = clamp(dot(thisSurface.normal, bounceDirection), 0, 1);
 		RAY_RECURSION_PUSH
 			RAY_GI_PUSH
-				traceRayEXT(tlas, 0, ~(RAYTRACE_TYPE_WATER | RAYTRACE_TYPE_CLUTTER), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, facingWorldPosition, xenonRendererData.config.zNear, bounceDirection, 32, 0);
+				traceRayEXT(tlas, 0, ~(RAYTRACE_TYPE_WATER | RAYTRACE_TYPE_CLUTTER), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, facingWorldPosition, xenonRendererData.config.zNear, bounceDirection, 1000, 0);
 			RAY_GI_POP
 		RAY_RECURSION_POP
 		ray.color.rgb *= nDotL;
