@@ -48,36 +48,36 @@ static double TerrainHeightMap(const dvec3& normalizedPos, double terrainRadius,
 	uint32_t Zindex = currentIndex*3+2;
 	
 	void main() {
-		#ifdef SHADER_COMPUTE_TERRAIN_NORMAL
-			// Normal
-			vec3 normal = ComputeNormal();
-			normals[Xindex].normal = normal.x;
-			normals[Yindex].normal = normal.y;
-			normals[Zindex].normal = normal.z;
-		#else
-			// Vertex
-			dvec3 posNorm = normalize((chunk.transform * dvec4(GetVertex(currentIndex), 1)).xyz);
-			dvec3 finalPos = (chunk.inverseTransform * dvec4(posNorm * TerrainHeightMap(posNorm), 1)).xyz;
-			vertices[Xindex].vertex = float(finalPos.x);
-			vertices[Yindex].vertex = float(finalPos.y);
-			vertices[Zindex].vertex = float(finalPos.z);
-			// Skirt
-			int32_t skirtIndex = -1;
-			if (genCol == 0) {
-				skirtIndex = int(genRow);
-			} else if (genCol == vertexSubdivisionsPerChunk) {
-				skirtIndex = int(vertexSubdivisionsPerChunk*4 - vertexSubdivisionsPerChunk - genRow);
-			} else if (genRow == 0) {
-				skirtIndex = int(vertexSubdivisionsPerChunk*4 - genCol);
-			} else if (genRow == vertexSubdivisionsPerChunk) {
-				skirtIndex = int(vertexSubdivisionsPerChunk + genCol);
-			}
-			if (skirtIndex != -1) {
-				vertices[(computeSize*computeSize + skirtIndex) * 3 + 1].vertex = vertices[Yindex].vertex - chunk.skirtOffset;
-				normals[(computeSize*computeSize + skirtIndex) * 3 + 0].normal = 0.0f;
-				normals[(computeSize*computeSize + skirtIndex) * 3 + 1].normal = 1.0f;
-				normals[(computeSize*computeSize + skirtIndex) * 3 + 2].normal = 0.0f;
-			}
-		#endif
+		// #ifdef SHADER_COMPUTE_TERRAIN_NORMAL
+		// 	// Normal
+		// 	vec3 normal = ComputeNormal();
+		// 	normals[Xindex].normal = normal.x;
+		// 	normals[Yindex].normal = normal.y;
+		// 	normals[Zindex].normal = normal.z;
+		// #else
+		// 	// Vertex
+		// 	dvec3 posNorm = normalize((chunk.transform * dvec4(GetVertex(currentIndex), 1)).xyz);
+		// 	dvec3 finalPos = (chunk.inverseTransform * dvec4(posNorm * TerrainHeightMap(posNorm), 1)).xyz;
+		// 	vertices[Xindex].vertex = float(finalPos.x);
+		// 	vertices[Yindex].vertex = float(finalPos.y);
+		// 	vertices[Zindex].vertex = float(finalPos.z);
+		// 	// Skirt
+		// 	int32_t skirtIndex = -1;
+		// 	if (genCol == 0) {
+		// 		skirtIndex = int(genRow);
+		// 	} else if (genCol == vertexSubdivisionsPerChunk) {
+		// 		skirtIndex = int(vertexSubdivisionsPerChunk*4 - vertexSubdivisionsPerChunk - genRow);
+		// 	} else if (genRow == 0) {
+		// 		skirtIndex = int(vertexSubdivisionsPerChunk*4 - genCol);
+		// 	} else if (genRow == vertexSubdivisionsPerChunk) {
+		// 		skirtIndex = int(vertexSubdivisionsPerChunk + genCol);
+		// 	}
+		// 	if (skirtIndex != -1) {
+		// 		vertices[(computeSize*computeSize + skirtIndex) * 3 + 1].vertex = vertices[Yindex].vertex - chunk.skirtOffset;
+		// 		normals[(computeSize*computeSize + skirtIndex) * 3 + 0].normal = 0.0f;
+		// 		normals[(computeSize*computeSize + skirtIndex) * 3 + 1].normal = 1.0f;
+		// 		normals[(computeSize*computeSize + skirtIndex) * 3 + 2].normal = 0.0f;
+		// 	}
+		// #endif
 	}
 #endif

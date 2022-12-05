@@ -47,4 +47,8 @@ void main() {
 			BUMP(Sand, surface.localPosition, surface.normal, waveLength, strength)
 		}
 	}
+	
+	
+	// surface.color.rgb = Heatmap(surface.color.r);
+	
 }

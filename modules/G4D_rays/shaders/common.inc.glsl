@@ -150,10 +150,9 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 	layout(buffer_reference, std430, buffer_reference_align = 2) buffer readonly IndexBuffer16 {uint16_t indices[];};
 	layout(buffer_reference, std430, buffer_reference_align = 4) buffer readonly IndexBuffer32 {uint32_t indices[];};
 	layout(buffer_reference, std430, buffer_reference_align = 4) buffer readonly VertexBuffer {float vertices[];};
-	layout(buffer_reference, std430, buffer_reference_align = 4) buffer readonly VertexColor {u8vec4 colors[];};
+	layout(buffer_reference, std430, buffer_reference_align = 16) buffer readonly VertexColor {vec4 colors[];};
 	layout(buffer_reference, std430, buffer_reference_align = 4) buffer readonly VertexNormal {float normals[];};
-	layout(buffer_reference, std430, buffer_reference_align = 8) buffer readonly VertexUV1 {vec2 uv[];};
-	layout(buffer_reference, std430, buffer_reference_align = 8) buffer readonly VertexUV2 {vec2 uv[];};
+	layout(buffer_reference, std430, buffer_reference_align = 8) buffer readonly VertexUV {vec2 uv[];};
 
 	#define WORLD2VIEWNORMAL transpose(inverse(mat3(renderer.viewMatrix)))
 	#define VIEW2WORLDNORMAL transpose(mat3(renderer.viewMatrix))
@@ -208,7 +207,7 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 		if (geometry.colors != 0) {
 			VertexColor vertexColors = VertexColor(geometry.colors);
 			if (uint64_t(geometry.aabbs) != 0) {
-				return vec4(vertexColors.colors[primitiveID]) / 255;
+				return vertexColors.colors[primitiveID];
 			}
 			uint index0 = primitiveID * 3;
 			uint index1 = primitiveID * 3 + 1;
@@ -223,9 +222,9 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 				index2 = IndexBuffer32(geometry.indices32).indices[index2];
 			}
 			return (
-				+ vec4(vertexColors.colors[index0]) / 255 * barycentricCoordsOrLocalPosition.x
-				+ vec4(vertexColors.colors[index1]) / 255 * barycentricCoordsOrLocalPosition.y
-				+ vec4(vertexColors.colors[index2]) / 255 * barycentricCoordsOrLocalPosition.z
+				+ vertexColors.colors[index0] * barycentricCoordsOrLocalPosition.x
+				+ vertexColors.colors[index1] * barycentricCoordsOrLocalPosition.y
+				+ vertexColors.colors[index2] * barycentricCoordsOrLocalPosition.z
 			);
 		} else {
 			return vec4(1);
@@ -249,11 +248,11 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 			index2 = IndexBuffer32(geometry.indices32).indices[index2];
 		}
 		if (geometry.uv1 != 0) {
-			VertexUV1 vertexUV = VertexUV1(geometry.uv1);
+			VertexUV vertexUV = VertexUV(geometry.uv1);
 			return (
-				+ vec2(vertexUV.uv[index0]) * barycentricCoordsOrLocalPosition.x
-				+ vec2(vertexUV.uv[index1]) * barycentricCoordsOrLocalPosition.y
-				+ vec2(vertexUV.uv[index2]) * barycentricCoordsOrLocalPosition.z
+				+ vertexUV.uv[index0] * barycentricCoordsOrLocalPosition.x
+				+ vertexUV.uv[index1] * barycentricCoordsOrLocalPosition.y
+				+ vertexUV.uv[index2] * barycentricCoordsOrLocalPosition.z
 			);
 		} else {
 			return vec2(0);
@@ -277,11 +276,11 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 			index2 = IndexBuffer32(geometry.indices32).indices[index2];
 		}
 		if (geometry.uv1 != 0) {
-			VertexUV2 vertexUV = VertexUV2(geometry.uv1);
+			VertexUV vertexUV = VertexUV(geometry.uv1);
 			return (
-				+ vec2(vertexUV.uv[index0]) * barycentricCoordsOrLocalPosition.x
-				+ vec2(vertexUV.uv[index1]) * barycentricCoordsOrLocalPosition.y
-				+ vec2(vertexUV.uv[index2]) * barycentricCoordsOrLocalPosition.z
+				+ vertexUV.uv[index0] * barycentricCoordsOrLocalPosition.x
+				+ vertexUV.uv[index1] * barycentricCoordsOrLocalPosition.y
+				+ vertexUV.uv[index2] * barycentricCoordsOrLocalPosition.z
 			);
 		} else {
 			return vec2(0);
