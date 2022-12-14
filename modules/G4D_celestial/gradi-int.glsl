@@ -56,17 +56,63 @@ uint GradUint(in uvec3 pos, in uint stride, in uint maximum) {
 	return min(p, maximum);
 }
 
+float tricosineInterpolation(float a, float b, float x) {
+	float ft = x * 3.1415927;
+	float f = (1. - cos(ft)) * 0.5;
+	return a*(1.-f) + b*f;
+}
+
+// float slerp(float x) {
+// 	return x * x * x * (x * (x * 6. - 15.) + 10.);
+// }
+
+// float slerp(float x) {
+// 	return smoothstep(0.,1., x);
+// }
+
+// float slerp(float x) {
+// 	return mix(x * x * (3. - 2. * x), x, 0.5);
+// }
+
+float slerp(float x) {
+	return mix(smoothstep(0.,1.,x), x, 0.5);
+}
+
+float GradUintNorm(in uvec3 pos, in uint stride, in uint maximum) {
+	float stridef = float(stride);
+	vec3 d = vec3(pos % stride) / stridef;
+	pos /= stride;
+	float maximumf = float(maximum);
+	float p000 = float(GradUintHash(pos) % maximum);
+	float p001 = float(GradUintHash(pos + uvec3(0,0,1)) % maximum);
+	float p010 = float(GradUintHash(pos + uvec3(0,1,0)) % maximum);
+	float p011 = float(GradUintHash(pos + uvec3(0,1,1)) % maximum);
+	float p100 = float(GradUintHash(pos + uvec3(1,0,0)) % maximum);
+	float p101 = float(GradUintHash(pos + uvec3(1,0,1)) % maximum);
+	float p110 = float(GradUintHash(pos + uvec3(1,1,0)) % maximum);
+	float p111 = float(GradUintHash(pos + uvec3(1,1,1)) % maximum);
+	float p00 = (p000 * slerp(1.0 - d.x) + p100 * slerp(d.x));
+	float p01 = (p001 * slerp(1.0 - d.x) + p101 * slerp(d.x));
+	float p10 = (p010 * slerp(1.0 - d.x) + p110 * slerp(d.x));
+	float p11 = (p011 * slerp(1.0 - d.x) + p111 * slerp(d.x));
+	float p0 = (p00 * slerp(1.0 - d.y) + p10 * slerp(d.y));
+	float p1 = (p01 * slerp(1.0 - d.y) + p11 * slerp(d.y));
+	float p = (p0 * slerp(1.0 - d.z) + p1 * slerp(d.z));
+	return slerp(p / maximumf);
+}
+
 uint RidgedGradUint(in uvec3 pos, in uint stride, in uint maximum) {
 	return uint(abs(int(GradUint(pos, stride, maximum)) - int(maximum) / 2));
 }
 
 void main() {
-	uint top = 75536u;
-	uint warpX = 0u;//GradUint(uvec3(gl_FragCoord.xy, 0), 16u, 48u);
-	uint warpY = 0u;//GradUint(uvec3(gl_FragCoord.xy, 0), 16u, 35u);
+	uint top = 1536u;
+	uint warpX = 0u;//GradUint(uvec3(gl_FragCoord.xy, 0), 1u, 64u);
+	uint warpY = 0u;//GradUint(uvec3(gl_FragCoord.xy, 0), 1u, 64u);
 	uint warpZ = top;//GradUint(uvec3(gl_FragCoord.xy, 0), 16u, 41u);
 	uint value =
-		+ GradUint(uvec3(gl_FragCoord.xy*float(top)/16. + vec2(warpX, warpY), warpZ), top, top)
+		+ uint(GradUintNorm(uvec3(gl_FragCoord.xy*float(top)/64. + vec2(warpX, warpY), warpZ), top, top) * float(top))
+		// + GradUint(uvec3(gl_FragCoord.xy*float(top)/64. + vec2(warpX, warpY), warpZ), top, top)
 		
 		// + RidgedGradUint(uvec3(gl_FragCoord.xy + vec2(warpX, warpY), warpZ), 64u, 128u)
 		// + RidgedGradUint(uvec3(gl_FragCoord.xy + vec2(warpX, warpY)*1.5, warpZ), 32u, 64u)

@@ -49,7 +49,7 @@ void main() {
 	// }
 	
 	
-	surface.color.rgb = Heatmap(pow(surface.color.r, xenonRendererData.config.debugViewScale));
+	// surface.color.rgb = Heatmap(pow(surface.color.r, xenonRendererData.config.debugViewScale));
 	
 	// surface.color.rgb = sandColor;
 	
