@@ -34,21 +34,23 @@ float Rock(vec3 pos) {
 const float textureMaxDistance = 200;
 
 void main() {
-	surface.color.rgb = mix(rockColor, sandColor, 0.5);
-	if (surface.distance < textureMaxDistance) {
-		float strength = smoothstep(textureMaxDistance, 0, surface.distance);
-		float waveLength = 0.001;
-		float height = Rock(surface.localPosition);
-		if (height > 0.0) {
-			surface.color.rgb = mix(surface.color.rgb, rockColor, strength);
-			BUMP(Rock, surface.localPosition, surface.normal, waveLength, strength)
-		} else {
-			surface.color.rgb = mix(surface.color.rgb, sandColor, strength);
-			BUMP(Sand, surface.localPosition, surface.normal, waveLength, strength)
-		}
-	}
+	// surface.color.rgb = mix(rockColor, sandColor, 0.5);
+	// if (surface.distance < textureMaxDistance) {
+	// 	float strength = smoothstep(textureMaxDistance, 0, surface.distance);
+	// 	float waveLength = 0.001;
+	// 	float height = Rock(surface.localPosition);
+	// 	if (height > 0.0) {
+	// 		surface.color.rgb = mix(surface.color.rgb, rockColor, strength);
+	// 		BUMP(Rock, surface.localPosition, surface.normal, waveLength, strength)
+	// 	} else {
+	// 		surface.color.rgb = mix(surface.color.rgb, sandColor, strength);
+	// 		BUMP(Sand, surface.localPosition, surface.normal, waveLength, strength)
+	// 	}
+	// }
 	
 	
-	// surface.color.rgb = Heatmap(surface.color.r);
+	surface.color.rgb = Heatmap(pow(surface.color.r, xenonRendererData.config.debugViewScale));
+	
+	// surface.color.rgb = sandColor;
 	
 }
