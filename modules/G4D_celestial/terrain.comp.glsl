@@ -89,11 +89,11 @@ double moutainStep(double start, double end, double value) {
 	
 	void main() {
 		#ifdef SHADER_COMPUTE_TERRAIN_NORMAL
-			// Normal
-			vec3 normal = ComputeNormal();
-			normals[Xindex].normal = normal.x;
-			normals[Yindex].normal = normal.y;
-			normals[Zindex].normal = normal.z;
+			// // Normal
+			// vec3 normal = ComputeNormal();
+			// normals[Xindex].normal = normal.x;
+			// normals[Yindex].normal = normal.y;
+			// normals[Zindex].normal = normal.z;
 		#else
 			// Vertex
 			dvec3 posNorm = normalize((chunk.transform * dvec4(GetVertex(currentIndex), 1)).xyz);
@@ -131,9 +131,9 @@ double moutainStep(double start, double end, double value) {
 			}
 			if (skirtIndex != -1) {
 				vertices[(computeSize*computeSize + skirtIndex) * 3 + 1].vertex = vertices[Yindex].vertex - chunk.skirtOffset;
-				normals[(computeSize*computeSize + skirtIndex) * 3 + 0].normal = 0.0f;
-				normals[(computeSize*computeSize + skirtIndex) * 3 + 1].normal = 1.0f;
-				normals[(computeSize*computeSize + skirtIndex) * 3 + 2].normal = 0.0f;
+				// normals[(computeSize*computeSize + skirtIndex) * 3 + 0].normal = 0.0f;
+				// normals[(computeSize*computeSize + skirtIndex) * 3 + 1].normal = 1.0f;
+				// normals[(computeSize*computeSize + skirtIndex) * 3 + 2].normal = 0.0f;
 			}
 		#endif
 	}
