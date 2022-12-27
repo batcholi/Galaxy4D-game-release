@@ -1,0 +1,50 @@
+#ifdef __cplusplus
+	#pragma once
+#endif
+#include "game/graphics/common.inc.glsl"
+
+#define KM *TERRAIN_INT_MULTIPLIER*1000
+#define M *TERRAIN_INT_MULTIPLIER
+
+#ifdef GLSL
+	#define PLANET_BASE_RADIUS_INT chunk.baseRadiusInt
+	#define PLANET_HEIGHT_VARIATION_INT chunk.heightVariationInt
+#else
+	#define PLANET_BASE_RADIUS_INT (solidRadius * TERRAIN_INT_MULTIPLIER)
+	#define PLANET_HEIGHT_VARIATION_INT (heightVariation * TERRAIN_INT_MULTIPLIER)
+#endif
+
+#define COMPUTE_SIZE_X 16
+#define COMPUTE_SIZE_Y 16
+
+#define TERRAIN_INT_MULTIPLIER 1000
+
+BUFFER_REFERENCE_STRUCT(4) ChunkBuffer {
+	aligned_f64mat4 transform;
+	aligned_f64mat4 inverseTransform;
+	aligned_int64_t baseRadiusInt;
+	aligned_int64_t heightVariationInt;
+	aligned_float32_t skirtOffset;
+	aligned_float32_t triangleSize;
+	aligned_int32_t topSign;
+	aligned_int32_t rightSign;
+};
+
+BUFFER_REFERENCE_STRUCT(4) VertexBuffer {
+	float vertex;
+};
+
+BUFFER_REFERENCE_STRUCT(4) NormalBuffer {
+	float normal;
+};
+
+BUFFER_REFERENCE_STRUCT(4) ColorBuffer {
+	vec4 color;
+};
+
+PUSH_CONSTANT_STRUCT TerrainChunkPushConstant {
+	BUFFER_REFERENCE_ADDR(ChunkBuffer) chunk;
+	BUFFER_REFERENCE_ADDR(VertexBuffer) vertices;
+	BUFFER_REFERENCE_ADDR(NormalBuffer) normals;
+	BUFFER_REFERENCE_ADDR(ColorBuffer) colors;
+};

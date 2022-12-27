@@ -14,5 +14,11 @@ void main() {
 	
 	ApplyToneMapping(color);
 	
+	// Dithering (Part 1 of 2) stochastic pre-dither
+	if ((xenonRendererData.config.options & RENDER_OPTION_DITHERING) != 0) {
+		uint seed = InitRandomSeed(InitRandomSeed(compute_coord.x, compute_coord.y), uint(xenonRendererData.frameIndex % 32ul));
+		color.rgb += sign(vec3(RandomFloat(seed), RandomFloat(seed), RandomFloat(seed)) - 0.5) / 384.0;
+	}
+	
 	imageStore(img_resolved, compute_coord, vec4(clamp(color.rgb, vec3(0), vec3(1)), imageLoad(img_composite, compute_coord).a));
 }

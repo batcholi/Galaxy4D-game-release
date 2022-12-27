@@ -157,6 +157,8 @@ void main() {
 		if (RAY_RECURSIONS == 0) imageStore(img_normal_or_debug, COORDS, vec4(surface.uv1, 0, 1));
 	}
 	
+	DEBUG_TEST(vec4(albedo, 1))
+	
 	// Debug Time
 	if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_RAYHIT_TIME) {
 		if (RAY_RECURSIONS == 0) WRITE_DEBUG_TIME

@@ -8,7 +8,12 @@ void main() {
 	if (compute_coord.x >= compute_size.x || compute_coord.y >= compute_size.y) return;
 	
 	vec4 color = imageLoad(img_post, compute_coord);
-	// color.a /*component available for future use, set from toneMapping*/
+	
+	// Dithering (Part 2 of 2) fixed dither
+	if ((xenonRendererData.config.options & RENDER_OPTION_DITHERING) != 0) {
+		uint seed = InitRandomSeed(compute_coord.x, compute_coord.y);
+		color.rgb += sign(vec3(RandomFloat(seed), RandomFloat(seed), RandomFloat(seed)) - 0.5) / 384.0;
+	}
 	
 	if (xenonRendererData.config.debugViewMode != 0) {
 		vec4 debug = imageLoad(img_normal_or_debug, ivec2(vec2(compute_coord) / vec2(compute_size) * imageSize(img_normal_or_debug)));

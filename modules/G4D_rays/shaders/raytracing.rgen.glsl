@@ -139,6 +139,7 @@ void main() {
 			}
 			break;
 		case RENDERER_DEBUG_VIEWMODE_UVS:
+		case RENDERER_DEBUG_VIEWMODE_TEST:
 			break;
 	}
 }
