@@ -37,6 +37,8 @@ struct MakeTerrain_PARAMS {
 	double in_baseRadius;
 	double in_heightVariation;
 	uint64_t out_index;
+	const char* out_computeShader;
+	// const char* out_surfaceShader;
 };
 
 struct GetTerrainHeightMap_PARAMS {

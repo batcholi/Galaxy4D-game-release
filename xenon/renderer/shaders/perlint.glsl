@@ -109,13 +109,13 @@ float perlint32f(u32vec3 pos, uint32_t stride, uint32_t maximum) {
 	float p101 = float(perlint32Hash(pos + u32vec3(1,0,1)) % maximum);
 	float p110 = float(perlint32Hash(pos + u32vec3(1,1,0)) % maximum);
 	float p111 = float(perlint32Hash(pos + u32vec3(1,1,1)) % maximum);
-	float p00 = (p000 * slerp(1.0 - d.x) + p100 * slerp(d.x));
-	float p01 = (p001 * slerp(1.0 - d.x) + p101 * slerp(d.x));
-	float p10 = (p010 * slerp(1.0 - d.x) + p110 * slerp(d.x));
-	float p11 = (p011 * slerp(1.0 - d.x) + p111 * slerp(d.x));
-	float p0 = (p00 * slerp(1.0 - d.y) + p10 * slerp(d.y));
-	float p1 = (p01 * slerp(1.0 - d.y) + p11 * slerp(d.y));
-	float p = (p0 * slerp(1.0 - d.z) + p1 * slerp(d.z));
+	float p00 = (p000 * slerp(1.0f - d.x) + p100 * slerp(d.x));
+	float p01 = (p001 * slerp(1.0f - d.x) + p101 * slerp(d.x));
+	float p10 = (p010 * slerp(1.0f - d.x) + p110 * slerp(d.x));
+	float p11 = (p011 * slerp(1.0f - d.x) + p111 * slerp(d.x));
+	float p0 = (p00 * slerp(1.0f - d.y) + p10 * slerp(d.y));
+	float p1 = (p01 * slerp(1.0f - d.y) + p11 * slerp(d.y));
+	float p = (p0 * slerp(1.0f - d.z) + p1 * slerp(d.z));
 	return slerp(p / maximumf);
 }
 double perlint64f(u64vec3 pos, uint64_t stride, uint64_t maximum) {
