@@ -9,6 +9,7 @@
 #define RENDER_OPTION_TAA (1u<< 1)
 #define RENDER_OPTION_TEMPORAL_UPSCALING (1u<< 2)
 #define RENDER_OPTION_ACCUMULATE (1u<< 3)
+#define RENDER_OPTION_DITHERING (1u<< 4)
 
 // Debug view modes
 #define RENDER_DEBUG_VIEWMODE_NONE 0
