@@ -44,7 +44,7 @@ void main() {
 	vec4 rayleigh = atmosphere.rayleigh;
 	vec4 mie = atmosphere.mie;
 	float outerRadius = atmosphere.outerRadius;
-	float innerRadius = atmosphere.innerRadius;
+	float innerRadius = atmosphere.innerRadius - 1000;
 	float g = atmosphere.g;
 	float temperature = atmosphere.temperature;
 	
@@ -167,13 +167,13 @@ void main() {
 	vec4 fog = vec4(rayleighScattering + mieScattering + GetEmissionColor(temperature), pow(clamp(maxDepth/thickness, 0, 1), 4));
 	fog.a = mix(0, fog.a, pow(clamp(nextHitDistance/mie.a, 0, 1), 0.1));
 	
-	if (rayIsGi) {
-		// Desaturate GI
-		fog.rgb = mix(fog.rgb, vec3(length(fog.rgb)), 0.7);
-	}
+	// if (rayIsGi) {
+	// 	// Desaturate GI
+	// 	fog.rgb = mix(fog.rgb, vec3(length(fog.rgb)), 0.7);
+	// }
 	
 	ray.color.rgb += fog.rgb * fog.a;
-	ray.color.a += pow(fog.a, 4);
+	ray.color.a += pow(fog.a, 8);
 	
 	// Debug Time
 	if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_RAYHIT_TIME) {
