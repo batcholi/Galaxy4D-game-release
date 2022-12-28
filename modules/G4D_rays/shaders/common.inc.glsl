@@ -207,7 +207,7 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 		if (geometry.colors != 0) {
 			VertexColor vertexColors = VertexColor(geometry.colors);
 			if (uint64_t(geometry.aabbs) != 0) {
-				return vertexColors.colors[primitiveID];
+				return clamp(vertexColors.colors[primitiveID], vec4(0), vec4(1));
 			}
 			uint index0 = primitiveID * 3;
 			uint index1 = primitiveID * 3 + 1;
@@ -221,11 +221,11 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 				index1 = IndexBuffer32(geometry.indices32).indices[index1];
 				index2 = IndexBuffer32(geometry.indices32).indices[index2];
 			}
-			return (
+			return clamp(
 				+ vertexColors.colors[index0] * barycentricCoordsOrLocalPosition.x
 				+ vertexColors.colors[index1] * barycentricCoordsOrLocalPosition.y
 				+ vertexColors.colors[index2] * barycentricCoordsOrLocalPosition.z
-			);
+			, vec4(0), vec4(1));
 		} else {
 			return vec4(1);
 		}
