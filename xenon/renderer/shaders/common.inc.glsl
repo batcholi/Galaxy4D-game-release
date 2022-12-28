@@ -42,6 +42,7 @@ struct XenonRendererConfig {
 		, zNear(0.001f) // 1 mm
 		, zFar(1e13f) // 10 billion km
 		, cameraFov(80)
+		, smoothFov(80)
 		, debugViewMode(RENDER_DEBUG_VIEWMODE_NONE)
 		, debugViewScale(1.0f)
 		, options(0)
