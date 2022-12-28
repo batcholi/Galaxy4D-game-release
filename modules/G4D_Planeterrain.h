@@ -37,6 +37,7 @@ struct MakeTerrain_PARAMS {
 	double in_baseRadius;
 	double in_heightVariation;
 	uint64_t out_index;
+	double out_hydrosphereRadius;
 	const char* out_computeShader;
 	// const char* out_surfaceShader;
 };
