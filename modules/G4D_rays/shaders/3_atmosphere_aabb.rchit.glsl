@@ -48,17 +48,6 @@ void main() {
 	float g = atmosphere.g;
 	float temperature = atmosphere.temperature;
 	
-	
-	
-		SunData suns[1];
-		int nbSuns = 1; // atmosphere.nbSuns;
-		suns[0].position = renderer.sunDir * 1.5e11;
-		suns[0].radius = 700000000;
-		suns[0].color = vec3(1);
-		suns[0].temperature = 5778;
-	
-	
-	
 	vec3 atmospherePosition = gl_ObjectToWorldEXT[3].xyz;
 	vec3 origin = gl_WorldRayOriginEXT;
 	vec3 viewDir = gl_WorldRayDirectionEXT;
@@ -105,8 +94,8 @@ void main() {
 	vec3 rayleighScattering = vec3(0);
 	vec3 mieScattering = vec3(0);
 	float maxDepth = 0;
-	for (int sunIndex = 0; sunIndex < nbSuns; ++sunIndex) {
-		SunData sun = suns[sunIndex];
+	for (int sunIndex = 0; sunIndex < atmosphere.nbSuns; ++sunIndex) {
+		SunData sun = atmosphere.suns[sunIndex];
 		vec3 relativeSunPosition = sun.position - atmospherePosition;
 		vec3 lightIntensity = sun.color * GetSunRadiationAtDistanceSqr(sun.temperature, sun.radius, dot(relativeSunPosition, relativeSunPosition)) * 4.0 * 3.141592654;
 		if (length(lightIntensity) > sunLuminosityThreshold) {

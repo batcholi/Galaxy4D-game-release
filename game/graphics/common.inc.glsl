@@ -31,6 +31,14 @@ BUFFER_REFERENCE_STRUCT_READONLY(16) AabbData {
 };
 STATIC_ASSERT_ALIGNED16_SIZE(AabbData, 32)
 
+struct SunData {
+	vec3 position;
+	float radius;
+	vec3 color;
+	float temperature;
+};
+STATIC_ASSERT_ALIGNED16_SIZE(SunData, 32)
+
 BUFFER_REFERENCE_STRUCT_READONLY(16) AtmosphereData {
 	aligned_f32vec4 rayleigh;
 	aligned_f32vec4 mie;
@@ -38,21 +46,17 @@ BUFFER_REFERENCE_STRUCT_READONLY(16) AtmosphereData {
 	aligned_float32_t outerRadius;
 	aligned_float32_t g;
 	aligned_float32_t temperature;
+	aligned_f32vec3 _unused;
+	aligned_int32_t nbSuns;
+	SunData suns[2];
 };
-STATIC_ASSERT_ALIGNED16_SIZE(AtmosphereData, 48)
-
-struct SunData {
-	vec3 position;
-	float radius;
-	vec3 color;
-	float temperature;
-};
+STATIC_ASSERT_ALIGNED16_SIZE(AtmosphereData, 128)
 
 BUFFER_REFERENCE_STRUCT_READONLY(16) WaterData {
 	aligned_f64vec3 center;
 	aligned_float64_t radius;
 };
-STATIC_ASSERT_ALIGNED16_SIZE(AtmosphereData, 48)
+STATIC_ASSERT_ALIGNED16_SIZE(WaterData, 32)
 
 struct GeometryInfo {
 	aligned_f32vec4 color;
@@ -122,25 +126,33 @@ STATIC_ASSERT_ALIGNED16_SIZE(AimBuffer, 96)
 		layout(location = SURFACE_CALLABLE_PAYLOAD) callableDataInEXT Surface surface;
 	#endif
 	
-	float STEFAN_BOLTZMANN_CONSTANT = 5.670374419184429E-8;
-	float GetSunRadiationAtDistanceSqr(float temperature, float radius, float distanceSqr) {
-		float radiusSqr = pow(radius, 2.0);
-		return radiusSqr * STEFAN_BOLTZMANN_CONSTANT * pow(temperature, 4.0) / distanceSqr;
-	}
-	float GetRadiationAtTemperatureForWavelength(float temperature_kelvin, float wavelength_nm) {
-		float hcltkb = 14387769.6 / (wavelength_nm * temperature_kelvin);
-		float w = wavelength_nm / 1000.0;
-		return 119104.2868 / (w * w * w * w * w * (exp(hcltkb) - 1.0));
-	}
-	vec3 GetEmissionColor(float temperatureKelvin) {
-		return vec3(
-			GetRadiationAtTemperatureForWavelength(temperatureKelvin, 680.0),
-			GetRadiationAtTemperatureForWavelength(temperatureKelvin, 550.0),
-			GetRadiationAtTemperatureForWavelength(temperatureKelvin, 440.0)
-		);
-	}
-	vec3 GetEmissionColor(vec4 emission_temperature) {
-		return emission_temperature.rgb + GetEmissionColor(emission_temperature.a);
-	}
+#endif
 
+#ifdef __cplusplus
+namespace {
+#endif
+
+float STEFAN_BOLTZMANN_CONSTANT = 5.670374419184429E-8f;
+float GetSunRadiationAtDistanceSqr(float temperature, float radius, float distanceSqr) {
+	float radiusSqr = radius*radius;
+	return radiusSqr * STEFAN_BOLTZMANN_CONSTANT * pow(temperature, 4.0f) / distanceSqr;
+}
+float GetRadiationAtTemperatureForWavelength(float temperature_kelvin, float wavelength_nm) {
+	float hcltkb = 14387769.6f / (wavelength_nm * temperature_kelvin);
+	float w = wavelength_nm / 1000.0f;
+	return 119104.2868f / (w * w * w * w * w * (exp(hcltkb) - 1.0f));
+}
+vec3 GetEmissionColor(float temperatureKelvin) {
+	return vec3(
+		GetRadiationAtTemperatureForWavelength(temperatureKelvin, 680.0f),
+		GetRadiationAtTemperatureForWavelength(temperatureKelvin, 550.0f),
+		GetRadiationAtTemperatureForWavelength(temperatureKelvin, 440.0f)
+	);
+}
+vec3 GetEmissionColor(vec4 emission_temperature) {
+	return vec3(emission_temperature.r, emission_temperature.g, emission_temperature.b) + GetEmissionColor(emission_temperature.a);
+}
+
+#ifdef __cplusplus
+}
 #endif
