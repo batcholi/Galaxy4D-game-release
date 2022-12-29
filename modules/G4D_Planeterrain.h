@@ -30,14 +30,61 @@
 	#define GLM_ENABLE_EXPERIMENTAL
 #endif
 #include <glm/glm.hpp>
+#include <unordered_map>
+#include <string>
+#include <functional>
+#include <sstream>
 
 using namespace glm;
+
+template<size_t N>
+class fixed_map {
+	struct element {
+		const char* key;
+		const char* value;
+	};
+	size_t nb_elements;
+	element elements[N];
+public:
+	class iterator {
+		const element* ptr;
+	public:
+		iterator(const element* ptr_) : ptr(ptr_) {}
+		iterator operator++() {++ptr; return *this;}
+		bool operator!=(const iterator& other) const {return ptr != other.ptr;}
+		const element& operator*() const {return *ptr;}
+	};
+	fixed_map(const std::unordered_map<std::string, std::string>& in_map = {}) : nb_elements(0) {
+		for (const auto&[key,value] : in_map) {
+			assert(nb_elements < N);
+			elements[nb_elements++] = element{.key = key.c_str(), .value = value.c_str()};
+		}
+	}
+	iterator begin() const {return iterator{elements};}
+	const iterator end() const {return iterator{elements + nb_elements};}
+	const char* operator[] (const char* key) const {
+		for (const auto&[k,v] : *this) {
+			if (strcmp(key, k) == 0) return v;
+		}
+		return nullptr;
+	}
+	const char* operator[](size_t i) {
+		assert(i < nb_elements);
+		return elements[i].value;
+	}
+	void ForEach(std::function<void(std::string key, std::stringstream value)> func) const {
+		for (const auto&[k,v] : *this) func(std::string{k}, std::stringstream{std::string{v}});
+	}
+};
 
 struct MakeTerrain_PARAMS {
 	double in_baseRadius;
 	double in_heightVariation;
+	double in_hydrosphere;
+	fixed_map<256> in_configs;
 	uint64_t out_index;
-	double out_hydrosphereRadius;
+	void* out_configs_ptr;
+	size_t out_configs_size;
 	const char* out_computeShader;
 	// const char* out_surfaceShader;
 };
