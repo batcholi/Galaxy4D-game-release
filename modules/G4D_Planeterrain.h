@@ -37,11 +37,11 @@
 
 using namespace glm;
 
-template<size_t N>
+template<typename TK, typename TV, size_t N>
 class fixed_map {
 	struct element {
-		const char* key;
-		const char* value;
+		TK key;
+		TV value;
 	};
 	size_t nb_elements;
 	element elements[N];
@@ -54,39 +54,46 @@ public:
 		bool operator!=(const iterator& other) const {return ptr != other.ptr;}
 		const element& operator*() const {return *ptr;}
 	};
-	fixed_map(const std::unordered_map<std::string, std::string>& in_map = {}) : nb_elements(0) {
+	template<typename TKK>
+	fixed_map(const std::unordered_map<TKK, TV>& in_map = {}) : nb_elements(0) {
 		for (const auto&[key,value] : in_map) {
 			assert(nb_elements < N);
-			elements[nb_elements++] = element{.key = key.c_str(), .value = value.c_str()};
+			if constexpr (std::is_same_v<TKK, TK>) {
+				elements[nb_elements++] = element{.key = key, .value = value};
+			} else {
+				static_assert(std::is_same_v<TKK, std::string>);
+				if constexpr (std::is_same_v<TK, const char*>) {
+					elements[nb_elements++] = element{.key = key.c_str(), .value = value};
+				} else {
+					TK k;
+					std::stringstream s {key};
+					s >> k;
+					elements[nb_elements++] = element{.key = k, .value = value};
+				}
+			}
 		}
 	}
 	iterator begin() const {return iterator{elements};}
 	const iterator end() const {return iterator{elements + nb_elements};}
-	const char* operator[] (const char* key) const {
+	TV operator[] (TK key) const {
 		for (const auto&[k,v] : *this) {
-			if (strcmp(key, k) == 0) return v;
+			if constexpr (std::is_same_v<TK, const char*>) {
+				if (strcmp(key, k) == 0) return v;
+			} else {
+				if (key == k) return v;
+			}
 		}
-		return nullptr;
-	}
-	const char* operator[](size_t i) {
-		assert(i < nb_elements);
-		return elements[i].value;
-	}
-	void ForEach(std::function<void(std::string key, std::stringstream value)> func) const {
-		for (const auto&[k,v] : *this) func(std::string{k}, std::stringstream{std::string{v}});
+		return {};
 	}
 };
 
 struct MakeTerrain_PARAMS {
-	double in_baseRadius;
-	double in_heightVariation;
-	double in_hydrosphere;
-	fixed_map<256> in_configs;
+	fixed_map<const char*, double, 256> in_configs;
 	uint64_t out_index;
 	void* out_configs_ptr;
 	size_t out_configs_size;
 	const char* out_computeShader;
-	// const char* out_surfaceShader;
+	// const char* out_surfaceShader; // NOT WORKING YET BECAUSE IT WOULD ADD THE SURFACE TYPE AFTER THE RENDERER IS ALREADY INITIALIZED
 };
 
 struct GetTerrainHeightMap_PARAMS {
