@@ -71,7 +71,7 @@ void main() {
 			// 	RAY_RECURSION_PUSH
 			// 		RAY_SHADOW_PUSH
 			// 			RayPayload originalRay = ray;
-			// 			traceRayEXT(tlas, gl_RayFlagsTerminateOnFirstHitEXT, ~(/* RAYTRACE_TYPE_WATER | */ RAYTRACE_TYPE_ATMOSPHERE), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, xenonRendererData.config.zNear, sunDir, xenonRendererData.config.zFar, 0);
+			// 			traceRayEXT(tlas, gl_RayFlagsTerminateOnFirstHitEXT, ~(/* RAYTRACE_MASK_HYDROSPHERE | */ RAYTRACE_MASK_ATMOSPHERE), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, xenonRendererData.config.zNear, sunDir, xenonRendererData.config.zFar, 0);
 			// 			// lit
 			// 			if (RAY_IS_UNDERWATER) {
 			// 				directSunLight =  GetSunColor() * albedo * (1-ray.color.a);
@@ -128,7 +128,7 @@ void main() {
 		float nDotL = clamp(dot(originalRay.normal, bounceDirection), 0, 1);
 		RAY_RECURSION_PUSH
 			RAY_GI_PUSH
-				traceRayEXT(tlas, 0, ~(RAYTRACE_TYPE_WATER | RAYTRACE_TYPE_CLUTTER), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, 0, bounceDirection, GI_RAY_MAX_DISTANCE, 0);
+				traceRayEXT(tlas, 0, ~(RAYTRACE_MASK_HYDROSPHERE | RAYTRACE_MASK_CLUTTER), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, 0, bounceDirection, GI_RAY_MAX_DISTANCE, 0);
 			RAY_GI_POP
 		RAY_RECURSION_POP
 		ray.color.rgb *= nDotL / 3.1415;
@@ -144,7 +144,7 @@ void main() {
 			ray.color.rgb = vec3(0);
 			RAY_RECURSION_PUSH
 				RAY_GI_PUSH
-					traceRayEXT(tlas, 0, RAYTRACE_TYPE_ATMOSPHERE, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, 0, originalRay.normal, 10000, 0);
+					traceRayEXT(tlas, 0, RAYTRACE_MASK_ATMOSPHERE, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, 0, originalRay.normal, 10000, 0);
 				RAY_GI_POP
 			RAY_RECURSION_POP
 			originalRay.color.rgb += albedo * ray.color.rgb * (1-giFactor) / 3.1415;
