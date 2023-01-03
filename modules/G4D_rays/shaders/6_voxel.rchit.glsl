@@ -3,8 +3,6 @@
 #include "common.inc.glsl"
 #include "gi.inc.glsl"
 
-layout(location = 0) rayPayloadInEXT RayPayload ray;
-
 hitAttributeEXT hit {
 	float t2;
 	VOXEL_INDEX_TYPE voxelIndex;
@@ -134,41 +132,44 @@ void main() {
 	
 	if (RAY_RECURSIONS < RAY_MAX_RECURSION) {
 	
-		// Direct Lighting
-		vec3 color = ray.color.rgb;
-		ray.color = vec4(0);
-		vec3 sunDir = normalize(renderer.sunDir);
-		float nDotL = dot(thisSurface.normal, sunDir);
-		vec3 directSunLight = vec3(0);
-		if (nDotL > 0) {
-			float shadowRayStart = xenonRendererData.config.zNear;
-			RAY_RECURSION_PUSH
-				RAY_SHADOW_PUSH
-					vec3 colorFilter = vec3(1);
-					float opacity = 0;
-					const float MAX_SHADOW_TRANSPARENCY_RAYS = 2;
-					for (int i = 0; i < MAX_SHADOW_TRANSPARENCY_RAYS; ++i) {
-						traceRayEXT(tlas, 0, ~(RAYTRACE_MASK_HYDROSPHERE | RAYTRACE_MASK_ATMOSPHERE), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, shadowRayStart, sunDir, xenonRendererData.config.zFar, 0);
-						if (ray.hitDistance == -1) {
-							// lit
-							if (rayIsGi) {
-								directSunLight = pow(thisSurface.color.rgb * ray.color.rgb, vec3(0.25)) * 0.5;
-							} else {
-								directSunLight = thisSurface.color.rgb * renderer.skyLightColor * nDotL;
-							}
-							directSunLight *= colorFilter * (1 - clamp(opacity,0,1));
-							break;
-						} else {
-							colorFilter *= ray.color.rgb;
-							opacity += max(0.05, ray.color.a);
-							shadowRayStart = max(ray.hitDistance, ray.t2) * 1.001;
-						}
-						if (opacity > 0.95) break;
-					}
-				RAY_SHADOW_POP
-			RAY_RECURSION_POP
-		}
-		ray.color.rgb = color + directSunLight;
+		// // Direct Lighting
+		// vec3 color = ray.color.rgb;
+		// ray.color = vec4(0);
+		// vec3 sunDir = normalize(renderer.sunDir);
+		// float nDotL = dot(thisSurface.normal, sunDir);
+		// vec3 directLighting = vec3(0);
+		// if (nDotL > 0) {
+		// 	float shadowRayStart = xenonRendererData.config.zNear;
+		// 	RAY_RECURSION_PUSH
+		// 		RAY_SHADOW_PUSH
+		// 			vec3 colorFilter = vec3(1);
+		// 			float opacity = 0;
+		// 			const float MAX_SHADOW_TRANSPARENCY_RAYS = 2;
+		// 			for (int i = 0; i < MAX_SHADOW_TRANSPARENCY_RAYS; ++i) {
+		// 				traceRayEXT(tlas, 0, ~(RAYTRACE_MASK_HYDROSPHERE | RAYTRACE_MASK_ATMOSPHERE), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, shadowRayStart, sunDir, xenonRendererData.config.zFar, 0);
+		// 				if (ray.hitDistance == -1) {
+		// 					// lit
+		// 					if (rayIsGi) {
+		// 						directLighting = pow(thisSurface.color.rgb * ray.color.rgb, vec3(0.25)) * 0.5;
+		// 					} else {
+		// 						directLighting = thisSurface.color.rgb * renderer.skyLightColor * nDotL;
+		// 					}
+		// 					directLighting *= colorFilter * (1 - clamp(opacity,0,1));
+		// 					break;
+		// 				} else {
+		// 					colorFilter *= ray.color.rgb;
+		// 					opacity += max(0.05, ray.color.a);
+		// 					shadowRayStart = max(ray.hitDistance, ray.t2) * 1.001;
+		// 				}
+		// 				if (opacity > 0.95) break;
+		// 			}
+		// 		RAY_SHADOW_POP
+		// 	RAY_RECURSION_POP
+		// }
+		
+		// vec3 directLighting = GetBasicDirectLighting(thisSurface.worldPosition, thisSurface.normal);
+		// ray.color.rgb *= directLighting;
+		
 		
 		if (!rayIsGi) {
 			

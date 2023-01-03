@@ -7,8 +7,6 @@
 #define WATER_IOR 1.33
 #define WATER_OPACITY 0.1
 
-layout(location = 0) rayPayloadInEXT RayPayload ray;
-
 hitAttributeEXT hit {
 	float t1;
 	float t2;

@@ -20,6 +20,8 @@
 #define SURFACE_CALLABLE_PAYLOAD 0
 #define VOXEL_SURFACE_CALLABLE_PAYLOAD 1
 
+#define LIGHT_LUMINOSITY_VISIBLE_THRESHOLD 0.02
+
 BUFFER_REFERENCE_STRUCT_READONLY(16) AabbData {
 	aligned_float32_t aabb[6];
 	aligned_uint64_t data; // Arbitrary data defined per-shader
@@ -33,6 +35,17 @@ struct SunData {
 	float temperature;
 };
 STATIC_ASSERT_ALIGNED16_SIZE(SunData, 32)
+
+BUFFER_REFERENCE_STRUCT_READONLY(16) LightSourceInstanceData {
+	aligned_float32_t aabb[6];
+	aligned_float32_t power; // in watts
+	aligned_float32_t maxDistance; // dynamically updated (along with aabb) depending on set power
+	aligned_f32vec3 color; // components individually normalized between 0 and 1
+	aligned_float32_t innerRadius;
+	aligned_f32vec3 direction; // oriented in object space, for spot lights only (must have a non-zero angle set below)
+	aligned_float32_t angle; // in radians, used for spotlights only, otherwise set to 0 for a point/sphere light
+};
+STATIC_ASSERT_ALIGNED16_SIZE(LightSourceInstanceData, 64)
 
 BUFFER_REFERENCE_STRUCT_READONLY(16) AtmosphereData {
 	aligned_f32vec4 rayleigh;

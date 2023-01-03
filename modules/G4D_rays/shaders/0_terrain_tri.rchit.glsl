@@ -2,8 +2,6 @@
 #include "common.inc.glsl"
 #include "gi.inc.glsl"
 
-layout(location = 0) rayPayloadInEXT RayPayload ray;
-
 hitAttributeEXT vec3 hitAttribs;
 
 // float NormalDetail(in vec3 pos) {
@@ -55,61 +53,12 @@ void main() {
 	// Fresnel
 	float fresnel = Fresnel((renderer.viewMatrix * vec4(ray.worldPosition, 1)).xyz, normalize(WORLD2VIEWNORMAL * ray.normal), surface.ior);
 	
-	
 	// Direct Lighting
-	vec3 directSunLight = vec3(0);
+	vec3 directLighting = vec3(0);
 	if (recursions < RAY_MAX_RECURSION) {
-		vec3 color = ray.color.rgb;
-		ray.color = vec4(0);
-		vec3 sunDir = normalize(renderer.sunDir);
-		float nDotL = dot(ray.normal, sunDir);
-		if (nDotL > 0) {
-			const vec3 rayOrigin = ray.worldPosition + ray.normal * ray.hitDistance * 0.001;
-			
-			
-			// // Using Ray Tracing Pipeline (more compatible)
-			// 	RAY_RECURSION_PUSH
-			// 		RAY_SHADOW_PUSH
-			// 			RayPayload originalRay = ray;
-			// 			traceRayEXT(tlas, gl_RayFlagsTerminateOnFirstHitEXT, ~(/* RAYTRACE_MASK_HYDROSPHERE | */ RAYTRACE_MASK_ATMOSPHERE), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, xenonRendererData.config.zNear, sunDir, xenonRendererData.config.zFar, 0);
-			// 			// lit
-			// 			if (RAY_IS_UNDERWATER) {
-			// 				directSunLight =  GetSunColor() * albedo * (1-ray.color.a);
-			// 			} else {
-			// 				directSunLight = GetSunColor() * (1-ray.color.a) * (albedo + fresnel * surface.specular) * nDotL;
-			// 			}
-			// 			ray = originalRay;
-			// 		RAY_SHADOW_POP
-			// 	RAY_RECURSION_POP
-			
-			
-			// Using Ray Query (faster)
-				if (rayQuerySunlight(rayOrigin, sunDir)) {
-					directSunLight = GetSunColor() * (albedo + fresnel * surface.specular) * nDotL * (rayIsUnderWater? 0.5:1);
-				}
-			
-			
-			// // Using Ray Query with Soft Shadows
-			// 	int shadowRaySamples = 16;
-			// 	float sunLight = 0;
-			// 	const float sunSolidAngle = 0.05;
-			// 	for (int s = 0; s < shadowRaySamples; ++s) {
-			// 		float pointRadius = sunSolidAngle * RandomFloat(seed);
-			// 		float pointAngle = RandomFloat(seed) * 2.0 * 3.1415926535;
-			// 		vec2 diskPoint = vec2(pointRadius * cos(pointAngle), pointRadius * sin(pointAngle));
-			// 		vec3 lightTangent = normalize(cross(sunDir, ray.normal));
-			// 		vec3 lightBitangent = normalize(cross(lightTangent, sunDir));
-			// 		vec3 shadowRayDir = normalize(sunDir + diskPoint.x * lightTangent + diskPoint.y * lightBitangent);
-			// 		if (rayQuerySunlight(rayOrigin, shadowRayDir)) {
-			// 			++sunLight;
-			// 		}
-			// 	}
-			// 	directSunLight = GetSunColor() * (albedo + fresnel * surface.specular) * nDotL * pow(sunLight/shadowRaySamples, 2);
-			
-			
-		}
+		directLighting = GetDirectLighting(ray.worldPosition, ray.normal) * (albedo + fresnel * surface.specular) * (rayIsUnderWater? 0.5:1);
 	}
-	ray.color = vec4(directSunLight, 1);
+	ray.color = vec4(directLighting, 1);
 	
 	bool useGi = false;
 	

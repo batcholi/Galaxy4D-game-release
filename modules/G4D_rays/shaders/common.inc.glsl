@@ -14,8 +14,9 @@
 #define RAY_MAX_RECURSION 8
 
 #define SET1_BINDING_TLAS 0
-#define SET1_BINDING_RENDERER_DATA 1
-#define SET1_BINDING_RT_PAYLOAD_IMAGE 2
+#define SET1_BINDING_LIGHTS_TLAS 1
+#define SET1_BINDING_RENDERER_DATA 2
+#define SET1_BINDING_RT_PAYLOAD_IMAGE 3
 
 #define RENDERER_DEBUG_VIEWMODE_NONE 0
 #define RENDERER_DEBUG_VIEWMODE_RAYGEN_TIME 1
@@ -103,6 +104,10 @@ BUFFER_REFERENCE_STRUCT_READONLY(16) MVPBufferHistory {aligned_f32mat4 mvp;};
 BUFFER_REFERENCE_STRUCT_WRITEONLY(8) RealtimeBufferCurrent {aligned_uint64_t mvpFrameIndex;};
 BUFFER_REFERENCE_STRUCT_READONLY(8) RealtimeBufferHistory {aligned_uint64_t mvpFrameIndex;};
 
+BUFFER_REFERENCE_STRUCT_READONLY(8) LightSourceInstanceTable {
+	BUFFER_REFERENCE_ADDR(LightSourceInstanceData) instance;
+};
+
 struct RendererData {
 	aligned_f32mat4 viewMatrix;
 	aligned_f32mat4 historyViewMatrix;
@@ -115,18 +120,18 @@ struct RendererData {
 	BUFFER_REFERENCE_ADDR(TLASInstance) tlasInstances;
 	BUFFER_REFERENCE_ADDR(AimBuffer) aim;
 	BUFFER_REFERENCE_ADDR(GlobalIllumination) globalIllumination;
-	aligned_f32vec3 sunDir;
+	BUFFER_REFERENCE_ADDR(LightSourceInstanceTable) lightSources;
+	aligned_float64_t timestamp;
+	aligned_f32vec3 _unused1;
 	aligned_uint32_t giIteration;
-	aligned_f32vec3 skyLightColor;
+	aligned_f32vec3 unused2;
 	aligned_float32_t warp;
 	aligned_f32vec3 wireframeColor;
 	aligned_float32_t wireframeThickness;
 	aligned_i32vec3 worldOrigin;
 	aligned_uint32_t globalIlluminationTableCount;
-	aligned_float64_t timestamp;
-	aligned_float64_t _unused2;
 };
-STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
+STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
 
 #ifdef GLSL
 	#define INSTANCE renderer.renderableInstances[gl_InstanceID]
@@ -153,7 +158,8 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 	#define COORDS ivec2(gl_LaunchIDEXT.xy)
 	#define WRITE_DEBUG_TIME {float elapsedTime = imageLoad(img_normal_or_debug, COORDS).a + float(clockARB() - startTime); imageStore(img_normal_or_debug, COORDS, vec4(0,0,0, elapsedTime));}
 	#define DEBUG_RAY_INT_TIME {if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_RAYINT_TIME) WRITE_DEBUG_TIME}
-	#define EPSILON 0.00001
+	#define EPSILON 0.0001
+	#define PI 3.141592654
 	#define traceRayEXT {if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_TRACE_RAY_COUNT) imageStore(img_normal_or_debug, COORDS, imageLoad(img_normal_or_debug, COORDS) + uvec4(0,0,0,1));} traceRayEXT
 	#define DEBUG_TEST(color) {if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_TEST) imageStore(img_normal_or_debug, COORDS, color);}
 	#define RAY_RECURSIONS imageLoad(rtPayloadImage, COORDS).r
@@ -342,6 +348,7 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 
 	#if defined(SHADER_RGEN) || defined(SHADER_RCHIT)
 		layout(set = 1, binding = SET1_BINDING_TLAS) uniform accelerationStructureEXT tlas;
+		layout(set = 1, binding = SET1_BINDING_LIGHTS_TLAS) uniform accelerationStructureEXT tlas_lights;
 	#endif
 
 	#if defined(SHADER_RGEN) || defined(SHADER_RCHIT) || defined(SHADER_RAHIT) || defined(SHADER_RINT) || defined(SHADER_RMISS)
@@ -349,30 +356,81 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 8*8 + 4*16 + 8 + 8);
 		uint stableSeed = InitRandomSeed(gl_LaunchIDEXT.x, gl_LaunchIDEXT.y);
 		uint coherentSeed = InitRandomSeed(uint(xenonRendererData.frameIndex),0);
 		uint seed = InitRandomSeed(stableSeed, coherentSeed);
-		
-		vec3 GetSunset() {
-			const float t = dot(renderer.sunDir, vec3(0,1,0));
-			return vec3(1.9f,1.1f,0.1f) * pow(1-abs(t), 4);
-		}
-		vec3 GetSunColor() {
-			float distance = 1.5e11;
-			vec3 position = renderer.sunDir * distance;
-			float radius = 700000000;
-			vec3 color = vec3(1);
-			float surfaceTemperature = 5778;
-			return color * GetSunRadiationAtDistanceSqr(surfaceTemperature, radius, distance*distance);
-		}
 	#endif
 
 	#ifdef SHADER_RCHIT
 		#extension GL_EXT_ray_query : require
-		bool rayQuerySunlight(in vec3 origin, in vec3 direction) {
+		vec3 GetBasicDirectLighting(in vec3 position, in vec3 normal) {
+			vec3 directLighting = vec3(0);
 			rayQueryEXT q;
-			rayQueryInitializeEXT(q, tlas, gl_RayFlagsTerminateOnFirstHitEXT, ~(RAYTRACE_MASK_HYDROSPHERE | RAYTRACE_MASK_ATMOSPHERE | RAYTRACE_MASK_CLUTTER), origin, xenonRendererData.config.zNear, direction, xenonRendererData.config.zFar);
+			rayQueryInitializeEXT(q, tlas_lights, 0, 0xff, position, 0, vec3(0,1,0), 0);
 			while (rayQueryProceedEXT(q)) {
-				rayQueryConfirmIntersectionEXT(q);
+				vec3 lightPosition = rayQueryGetIntersectionObjectToWorldEXT(q, false)[3].xyz; // may be broken on AMD...
+				int id = rayQueryGetIntersectionInstanceIdEXT(q, false);
+				vec3 relativeLightPosition = lightPosition - position;
+				vec3 lightDir = normalize(relativeLightPosition);
+				float nDotL = dot(normal, lightDir);
+				LightSourceInstanceData lightSource = renderer.lightSources[id].instance;
+				float distanceToLightSurface = length(relativeLightPosition) - lightSource.innerRadius;
+				if (distanceToLightSurface < 0.001) {
+					directLighting += lightSource.color * lightSource.power / (4.0 * PI);
+				} else if (nDotL > 0 && distanceToLightSurface < lightSource.maxDistance) {
+					rayQueryEXT q2;
+					rayQueryInitializeEXT(q2, tlas, gl_RayFlagsTerminateOnFirstHitEXT, RAYTRACE_MASK_TERRAIN|RAYTRACE_MASK_ENTITY|RAYTRACE_MASK_VOXEL|RAYTRACE_MASK_CLUTTER, position + normal * gl_HitTEXT * EPSILON, xenonRendererData.config.zNear, lightDir, distanceToLightSurface);
+					if (rayQueryProceedEXT(q2)) {
+						continue; // We've got a hit, no direct lighting from this light source
+					}
+					float lightIntensityBasedOnDistance = max(0, lightSource.power / (4.0 * PI * distanceToLightSurface*distanceToLightSurface + 1) - LIGHT_LUMINOSITY_VISIBLE_THRESHOLD);
+					directLighting += lightSource.color * lightIntensityBasedOnDistance * clamp(nDotL, 0, 1);
+				}
 			}
-			return rayQueryGetIntersectionTypeEXT(q, true) == gl_RayQueryCommittedIntersectionNoneEXT;
+			return directLighting;
+		}
+		layout(location = 0) rayPayloadInEXT RayPayload ray;
+		vec3 GetDirectLighting(in vec3 position, in vec3 normal) {
+			position += normal * gl_HitTEXT * EPSILON;
+			RayPayload originalRay = ray;
+			vec3 directLighting = vec3(0);
+			rayQueryEXT q;
+			rayQueryInitializeEXT(q, tlas_lights, 0, 0xff, position, 0, vec3(0,1,0), 0);
+			while (rayQueryProceedEXT(q)) {
+				vec3 lightPosition = rayQueryGetIntersectionObjectToWorldEXT(q, false)[3].xyz; // may be broken on AMD...
+				int id = rayQueryGetIntersectionInstanceIdEXT(q, false);
+				vec3 relativeLightPosition = lightPosition - position;
+				vec3 lightDir = normalize(relativeLightPosition);
+				float nDotL = dot(normal, lightDir);
+				LightSourceInstanceData lightSource = renderer.lightSources[id].instance;
+				float distanceToLightSurface = length(relativeLightPosition) - lightSource.innerRadius - gl_HitTEXT * EPSILON;
+				if (distanceToLightSurface <= 0.001) {
+					directLighting += lightSource.color * lightSource.power / (4.0 * PI);
+				} else if (nDotL > 0) {
+					float shadowRayStart = 0;
+					RAY_RECURSION_PUSH
+						RAY_SHADOW_PUSH
+							vec3 colorFilter = vec3(1);
+							float opacity = 0;
+							const float MAX_SHADOW_TRANSPARENCY_RAYS = 2;
+							for (int i = 0; i < MAX_SHADOW_TRANSPARENCY_RAYS; ++i) {
+								ray.color = vec4(0);
+								traceRayEXT(tlas, 0, RAYTRACE_MASK_TERRAIN|RAYTRACE_MASK_ENTITY|RAYTRACE_MASK_VOXEL|RAYTRACE_MASK_CLUTTER, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, position, shadowRayStart, lightDir, distanceToLightSurface, 0);
+								if (ray.hitDistance == -1) {
+									// lit
+									float lightIntensityBasedOnDistance = max(0, lightSource.power / (4.0 * PI * distanceToLightSurface*distanceToLightSurface + 1) - LIGHT_LUMINOSITY_VISIBLE_THRESHOLD);
+									directLighting += lightSource.color * lightIntensityBasedOnDistance * clamp(nDotL, 0, 1) * colorFilter * (1 - clamp(opacity,0,1));
+									break;
+								} else {
+									colorFilter *= ray.color.rgb;
+									opacity += max(0.05, ray.color.a);
+									shadowRayStart = max(ray.hitDistance, ray.t2) * 1.001;
+								}
+								if (opacity > 0.95) break;
+							}
+						RAY_SHADOW_POP
+					RAY_RECURSION_POP
+				}
+			}
+			ray = originalRay;
+			return directLighting;
 		}
 	#endif
 

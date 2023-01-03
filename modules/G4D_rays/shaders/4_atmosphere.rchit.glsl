@@ -26,8 +26,6 @@ bool RaySphereIntersection(in vec3 position, in vec3 rayDir, in float radius, ou
 	return inside || outside;
 }
 
-layout(location = 0) rayPayloadInEXT RayPayload ray;
-
 hitAttributeEXT hit {
 	float intersectionT2;
 };
