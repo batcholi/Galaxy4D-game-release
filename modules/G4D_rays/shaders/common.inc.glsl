@@ -32,36 +32,12 @@
 #define RENDERER_DEBUG_VIEWMODE_AIM_RENDERABLE 11
 #define RENDERER_DEBUG_VIEWMODE_AIM_GEOMETRY 12
 #define RENDERER_DEBUG_VIEWMODE_AIM_PRIMITIVE 13
-#define RENDERER_DEBUG_VIEWMODE_GLOBAL_ILLUMINATION 14
-#define RENDERER_DEBUG_VIEWMODE_SSAO 15
-#define RENDERER_DEBUG_VIEWMODE_TEST 16
-
-#define RAYTRACE_MASK_TERRAIN 1u
-#define RAYTRACE_MASK_ENTITY 2u
-#define RAYTRACE_MASK_VOXEL 4u
-#define RAYTRACE_MASK_ATMOSPHERE 8u
-#define RAYTRACE_MASK_HYDROSPHERE 16u
-#define RAYTRACE_MASK_CLUTTER 32u
-#define RAYTRACE_MASK_PLASMA 64u
-#define RAYTRACE_MASK_OVERLAY 128u
+#define RENDERER_DEBUG_VIEWMODE_SSAO 14
+#define RENDERER_DEBUG_VIEWMODE_LIGHTS 15
+#define RENDERER_DEBUG_VIEWMODE_GLOBAL_ILLUMINATION 16
+#define RENDERER_DEBUG_VIEWMODE_TEST 17
 
 #ifdef __cplusplus
-	
-	inline static constexpr uint32_t RAYTRACE_MASKS[] {
-		/*RENDERABLE_TYPE_TERRAIN_TRI*/		RAYTRACE_MASK_TERRAIN,
-		/*RENDERABLE_TYPE_ENTITY_TRI*/		RAYTRACE_MASK_ENTITY,
-		/*RENDERABLE_TYPE_ENTITY_BOX*/		RAYTRACE_MASK_ENTITY,
-		/*RENDERABLE_TYPE_ENTITY_SPHERE*/	RAYTRACE_MASK_ENTITY,
-		/*RENDERABLE_TYPE_ATMOSPHERE*/		RAYTRACE_MASK_ATMOSPHERE,
-		/*RENDERABLE_TYPE_HYDROSPHERE*/		RAYTRACE_MASK_HYDROSPHERE,
-		/*RENDERABLE_TYPE_VOXEL*/			RAYTRACE_MASK_VOXEL,
-		/*RENDERABLE_TYPE_CLUTTER_TRI*/		RAYTRACE_MASK_CLUTTER,
-		/*RENDERABLE_TYPE_PLASMA*/			RAYTRACE_MASK_PLASMA,
-		/*RENDERABLE_TYPE_OVERLAY_TRI*/		RAYTRACE_MASK_OVERLAY,
-		/*RENDERABLE_TYPE_OVERLAY_BOX*/		RAYTRACE_MASK_OVERLAY,
-		/*RENDERABLE_TYPE_OVERLAY_SPHERE*/	RAYTRACE_MASK_OVERLAY,
-	};
-	
 	#define RENDERER_DEBUG_VIEWMODES_STR \
 		"NONE",\
 		"Ray Gen Time",\
@@ -77,10 +53,39 @@
 		"Aim Renderable",\
 		"Aim Geometry",\
 		"Aim Primitive",\
-		"Global Illumination",\
 		"SSAO",\
+		"Lights",\
+		"Global Illumination",\
 		"Test",\
+		
+#endif
 
+////////////////////////////////////
+
+#define RAYTRACE_MASK_TERRAIN 1u
+#define RAYTRACE_MASK_ENTITY 2u
+#define RAYTRACE_MASK_VOXEL 4u
+#define RAYTRACE_MASK_ATMOSPHERE 8u
+#define RAYTRACE_MASK_HYDROSPHERE 16u
+#define RAYTRACE_MASK_CLUTTER 32u
+#define RAYTRACE_MASK_PLASMA 64u
+#define RAYTRACE_MASK_OVERLAY 128u
+
+#ifdef __cplusplus
+	inline static constexpr uint32_t RAYTRACE_MASKS[] {
+		/*RENDERABLE_TYPE_TERRAIN_TRI*/		RAYTRACE_MASK_TERRAIN,
+		/*RENDERABLE_TYPE_ENTITY_TRI*/		RAYTRACE_MASK_ENTITY,
+		/*RENDERABLE_TYPE_ENTITY_BOX*/		RAYTRACE_MASK_ENTITY,
+		/*RENDERABLE_TYPE_ENTITY_SPHERE*/	RAYTRACE_MASK_ENTITY,
+		/*RENDERABLE_TYPE_ATMOSPHERE*/		RAYTRACE_MASK_ATMOSPHERE,
+		/*RENDERABLE_TYPE_HYDROSPHERE*/		RAYTRACE_MASK_HYDROSPHERE,
+		/*RENDERABLE_TYPE_VOXEL*/			RAYTRACE_MASK_VOXEL,
+		/*RENDERABLE_TYPE_CLUTTER_TRI*/		RAYTRACE_MASK_CLUTTER,
+		/*RENDERABLE_TYPE_PLASMA*/			RAYTRACE_MASK_PLASMA,
+		/*RENDERABLE_TYPE_OVERLAY_TRI*/		RAYTRACE_MASK_OVERLAY,
+		/*RENDERABLE_TYPE_OVERLAY_BOX*/		RAYTRACE_MASK_OVERLAY,
+		/*RENDERABLE_TYPE_OVERLAY_SPHERE*/	RAYTRACE_MASK_OVERLAY,
+	};
 #endif
 
 BUFFER_REFERENCE_STRUCT(16) GlobalIllumination {
@@ -380,8 +385,8 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
 					if (rayQueryProceedEXT(q2)) {
 						continue; // We've got a hit, no direct lighting from this light source
 					}
-					float lightIntensityBasedOnDistance = max(0, lightSource.power / (4.0 * PI * distanceToLightSurface*distanceToLightSurface + 1) - LIGHT_LUMINOSITY_VISIBLE_THRESHOLD);
-					directLighting += lightSource.color * lightIntensityBasedOnDistance * clamp(nDotL, 0, 1);
+					float effectiveLightIntensity = max(0, lightSource.power / (4.0 * PI * distanceToLightSurface*distanceToLightSurface + 1) - LIGHT_LUMINOSITY_VISIBLE_THRESHOLD) * clamp(nDotL, 0, 1);
+					directLighting += lightSource.color * effectiveLightIntensity;
 				}
 			}
 			return directLighting;
@@ -389,44 +394,97 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
 		layout(location = 0) rayPayloadInEXT RayPayload ray;
 		vec3 GetDirectLighting(in vec3 position, in vec3 normal) {
 			position += normal * gl_HitTEXT * EPSILON;
-			RayPayload originalRay = ray;
 			vec3 directLighting = vec3(0);
+			
 			rayQueryEXT q;
 			rayQueryInitializeEXT(q, tlas_lights, 0, 0xff, position, 0, vec3(0,1,0), 0);
+			
+			#define NB_LIGHTS 16
+			#define SORT_LIGHTS
+			
+			vec3 lightsDir[NB_LIGHTS];
+			float lightsDistance[NB_LIGHTS];
+			vec3 lightsColor[NB_LIGHTS];
+			float lightsPower[NB_LIGHTS];
+			// uint32_t lightsID[NB_LIGHTS];
+			uint32_t nbLights = 0;
+			
 			while (rayQueryProceedEXT(q)) {
 				vec3 lightPosition = rayQueryGetIntersectionObjectToWorldEXT(q, false)[3].xyz; // may be broken on AMD...
-				int id = rayQueryGetIntersectionInstanceIdEXT(q, false);
+				int lightID = rayQueryGetIntersectionInstanceIdEXT(q, false);
 				vec3 relativeLightPosition = lightPosition - position;
 				vec3 lightDir = normalize(relativeLightPosition);
 				float nDotL = dot(normal, lightDir);
-				LightSourceInstanceData lightSource = renderer.lightSources[id].instance;
+				LightSourceInstanceData lightSource = renderer.lightSources[lightID].instance;
 				float distanceToLightSurface = length(relativeLightPosition) - lightSource.innerRadius - gl_HitTEXT * EPSILON;
 				if (distanceToLightSurface <= 0.001) {
-					directLighting += lightSource.color * lightSource.power / (4.0 * PI);
-				} else if (nDotL > 0) {
-					float shadowRayStart = 0;
+					directLighting += lightSource.color * lightSource.power;
+				} else if (nDotL > 0 && distanceToLightSurface < lightSource.maxDistance) {
+					float effectiveLightIntensity = max(0, lightSource.power / (4.0 * PI * distanceToLightSurface*distanceToLightSurface + 1) - LIGHT_LUMINOSITY_VISIBLE_THRESHOLD) * clamp(nDotL, 0, 1);
+					
+					uint index = nbLights;
+					#ifdef SORT_LIGHTS
+						for (index = 0; index < nbLights; ++index) {
+							if (effectiveLightIntensity > lightsPower[index]) {
+								for (int i = min(NB_LIGHTS-1, int(nbLights)); i > int(index); --i) {
+									lightsDir[i] = lightsDir[i-1];
+									lightsDistance[i] = lightsDistance[i-1];
+									lightsColor[i] = lightsColor[i-1];
+									lightsPower[i] = lightsPower[i-1];
+									// lightsID[i] = lightsID[i-1];
+								}
+								break;
+							}
+						}
+						if (index == NB_LIGHTS) continue;
+					#endif
+					lightsDir[index] = lightDir;
+					lightsDistance[index] = distanceToLightSurface;
+					lightsColor[index] = lightSource.color;
+					lightsPower[index] = effectiveLightIntensity;
+					// lightsID[index] = lightID;
+					if (nbLights < NB_LIGHTS) ++nbLights;
+					#ifndef /*NOT*/SORT_LIGHTS
+						else {
+							rayQueryTerminateEXT(rayQuery);
+							break;
+						}
+					#endif
+				}
+			}
+			
+			if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_LIGHTS) {
+				imageStore(img_normal_or_debug, COORDS, vec4(Heatmap(float(nbLights) / float(NB_LIGHTS)), 1));
+			}
+			
+			RayPayload originalRay = ray;
+			for (uint i = 0; i < nbLights; ++i) {
+				float shadowRayStart = 0;
+				vec3 colorFilter = vec3(1);
+				float opacity = 0;
+				const float MAX_SHADOW_TRANSPARENCY_RAYS = 2;
+				for (int j = 0; j < MAX_SHADOW_TRANSPARENCY_RAYS; ++j) {
 					RAY_RECURSION_PUSH
 						RAY_SHADOW_PUSH
-							vec3 colorFilter = vec3(1);
-							float opacity = 0;
-							const float MAX_SHADOW_TRANSPARENCY_RAYS = 2;
-							for (int i = 0; i < MAX_SHADOW_TRANSPARENCY_RAYS; ++i) {
-								ray.color = vec4(0);
-								traceRayEXT(tlas, 0, RAYTRACE_MASK_TERRAIN|RAYTRACE_MASK_ENTITY|RAYTRACE_MASK_VOXEL|RAYTRACE_MASK_CLUTTER, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, position, shadowRayStart, lightDir, distanceToLightSurface, 0);
-								if (ray.hitDistance == -1) {
-									// lit
-									float lightIntensityBasedOnDistance = max(0, lightSource.power / (4.0 * PI * distanceToLightSurface*distanceToLightSurface + 1) - LIGHT_LUMINOSITY_VISIBLE_THRESHOLD);
-									directLighting += lightSource.color * lightIntensityBasedOnDistance * clamp(nDotL, 0, 1) * colorFilter * (1 - clamp(opacity,0,1));
-									break;
-								} else {
-									colorFilter *= ray.color.rgb;
-									opacity += max(0.05, ray.color.a);
-									shadowRayStart = max(ray.hitDistance, ray.t2) * 1.001;
-								}
-								if (opacity > 0.95) break;
-							}
+							ray.color = vec4(0);
+							traceRayEXT(tlas, 0, RAYTRACE_MASK_TERRAIN|RAYTRACE_MASK_ENTITY|RAYTRACE_MASK_VOXEL|RAYTRACE_MASK_CLUTTER, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, position, shadowRayStart, lightsDir[i], lightsDistance[i], 0);
 						RAY_SHADOW_POP
 					RAY_RECURSION_POP
+					if (ray.hitDistance == -1) {
+						// lit
+						directLighting += lightsColor[i] * lightsPower[i] * colorFilter * (1 - clamp(opacity,0,1));
+						#ifdef SORT_LIGHTS
+							ray = originalRay;
+							return directLighting;
+						#else
+							break;
+						#endif
+					} else {
+						colorFilter *= ray.color.rgb;
+						opacity += max(0.05, ray.color.a);
+						shadowRayStart = max(ray.hitDistance, ray.t2) * 1.001;
+					}
+					if (opacity > 0.95) break;
 				}
 			}
 			ray = originalRay;

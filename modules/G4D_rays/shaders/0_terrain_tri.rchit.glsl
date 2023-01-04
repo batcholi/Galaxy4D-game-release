@@ -46,10 +46,15 @@ void main() {
 		executeCallableEXT(GEOMETRY.info.surfaceIndex, SURFACE_CALLABLE_PAYLOAD);
 	// }
 	
-	vec3 albedo = surface.color.rgb;
-	
 	ray.normal = normalize(MODEL2WORLDNORMAL * surface.normal);
 
+	if (rayIsShadow) {
+		ray.color = surface.color;
+		return;
+	}
+	
+	vec3 albedo = surface.color.rgb;
+	
 	// Fresnel
 	float fresnel = Fresnel((renderer.viewMatrix * vec4(ray.worldPosition, 1)).xyz, normalize(WORLD2VIEWNORMAL * ray.normal), surface.ior);
 	
@@ -106,7 +111,7 @@ void main() {
 		if (RAY_RECURSIONS == 0) imageStore(img_normal_or_debug, COORDS, vec4(surface.uv1, 0, 1));
 	}
 	
-	DEBUG_TEST(vec4(albedo, 1))
+	// DEBUG_TEST(vec4(albedo, 1))
 	
 	// Debug Time
 	if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_RAYHIT_TIME) {
