@@ -10,7 +10,7 @@ void main() {
 	ray.localPosition = gl_ObjectRayOriginEXT + gl_ObjectRayDirectionEXT * gl_HitTEXT;
 	ray.worldPosition = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
 	ray.t2 = 0;
-	ray.ssao = 0;
+	ray.ssao = 1;
 	
 	ENTITY_COMPUTE_SURFACE_NORMAL
 	
@@ -34,22 +34,7 @@ void main() {
 		executeCallableEXT(GEOMETRY.info.surfaceIndex, SURFACE_CALLABLE_PAYLOAD);
 	// }
 	
-	vec3 albedo = surface.color.rgb;
-	
 	ray.normal = normalize(MODEL2WORLDNORMAL * surface.normal);
 	
-	// Fresnel
-	float fresnel = Fresnel((renderer.viewMatrix * vec4(ray.worldPosition, 1)).xyz, normalize(WORLD2VIEWNORMAL * ray.normal), surface.ior);
-	
-	// Direct Lighting
-	vec3 directLighting = vec3(0);
-	if (RAY_RECURSIONS < RAY_MAX_RECURSION) {
-		directLighting = GetDirectLighting(ray.worldPosition, ray.normal) * (albedo + fresnel * surface.specular) * (RAY_IS_UNDERWATER? 0.5:1);
-	}
-	ray.color = vec4(directLighting, 1);
-	
-	// Debug Time
-	if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_RAYHIT_TIME) {
-		if (RAY_RECURSIONS == 0) WRITE_DEBUG_TIME
-	}
+	ApplyDefaultLighting();
 }

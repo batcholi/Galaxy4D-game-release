@@ -87,48 +87,48 @@ void main() {
 	const uint giIndex1 = GetGiIndex(facingWorldPosition, 1);
 	seed += recursions * RAY_MAX_RECURSION;
 	
-	if ((xenonRendererData.config.options & RENDER_OPTION_ACCUMULATE) != 0) {
-		// Path Tracing
-		const float bounce_probabilities = 0.333;
-		if (recursions < RAY_MAX_RECURSION && RandomFloat(seed) < bounce_probabilities) {
-			vec3 reflectDir = normalize(reflect(gl_WorldRayDirectionEXT, thisSurface.normal));
-			vec3 randomDir = normalize(RandomInUnitSphere(seed));
-			vec3 bounceDirection = normalize(mix(reflectDir, normalize(thisSurface.normal + randomDir), clamp(thisSurface.diffuse*thisSurface.diffuse, 0, 1)));
-			if (RandomFloat(seed) < thisSurface.specular * fresnel) {
-				// Specular Reflection
-				bounceDirection = reflectDir;
-			} else if (RandomFloat(seed) < thisSurface.metallic) {
-				// Metallic Reflection
-				bounceDirection = normalize(mix(reflectDir, bounceDirection, thisSurface.diffuse*thisSurface.diffuse));
-			} else if (RandomFloat(seed) > thisSurface.color.a) {
-				// Refraction
-				vec3 refractDir = gl_WorldRayDirectionEXT;
-				Refract(refractDir, thisSurface.normal, thisSurface.ior);
-				bounceDirection = normalize(mix(refractDir, bounceDirection, thisSurface.diffuse*thisSurface.diffuse));
-			}
-			RAY_RECURSION_PUSH
-				traceRayEXT(tlas, 0, 0xff, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, xenonRendererData.config.zNear, bounceDirection, xenonRendererData.config.zFar, 0);
-			RAY_RECURSION_POP
-			ray.color.rgb /= mix(3.141592654, 1, thisSurface.metallic);
-		}
-		ray.color.rgb *= thisSurface.color.rgb;
-		ray.color.rgb /= bounce_probabilities;
-	} else if (recursions < RAY_MAX_RECURSION && LockAmbientLighting(giIndex)) {
-		vec3 bounceDirection = normalize(thisSurface.normal + RandomInUnitSphere(seed));
-		float nDotL = clamp(dot(thisSurface.normal, bounceDirection), 0, 1);
-		RAY_RECURSION_PUSH
-			RAY_GI_PUSH
-				traceRayEXT(tlas, 0, ~(RAYTRACE_MASK_HYDROSPHERE | RAYTRACE_MASK_CLUTTER), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, facingWorldPosition, xenonRendererData.config.zNear, bounceDirection, 1000, 0);
-			RAY_GI_POP
-		RAY_RECURSION_POP
-		ray.color.rgb *= nDotL;
-		ray.color.rgb *= smoothstep(32, 0, ray.hitDistance);
-		WriteAmbientLighting(giIndex, facingWorldPosition, BOX_NORMAL_DIRS[normalIndex], ray.color.rgb);
-		UnlockAmbientLighting(giIndex);
-	}
-	if (!rayIsGi && (xenonRendererData.config.options & RENDER_OPTION_ACCUMULATE) == 0) {
-		ray.color.rgb = thisSurface.color.rgb * GetAmbientLighting(giIndex1, facingWorldPosition, thisSurface.posInVoxel, BOX_NORMAL_DIRS[normalIndex]);
-	}
+	// if ((xenonRendererData.config.options & RENDER_OPTION_ACCUMULATE) != 0) {
+	// 	// Path Tracing
+	// 	const float bounce_probabilities = 0.333;
+	// 	if (recursions < RAY_MAX_RECURSION && RandomFloat(seed) < bounce_probabilities) {
+	// 		vec3 reflectDir = normalize(reflect(gl_WorldRayDirectionEXT, thisSurface.normal));
+	// 		vec3 randomDir = normalize(RandomInUnitSphere(seed));
+	// 		vec3 bounceDirection = normalize(mix(reflectDir, normalize(thisSurface.normal + randomDir), clamp(thisSurface.diffuse*thisSurface.diffuse, 0, 1)));
+	// 		if (RandomFloat(seed) < thisSurface.specular * fresnel) {
+	// 			// Specular Reflection
+	// 			bounceDirection = reflectDir;
+	// 		} else if (RandomFloat(seed) < thisSurface.metallic) {
+	// 			// Metallic Reflection
+	// 			bounceDirection = normalize(mix(reflectDir, bounceDirection, thisSurface.diffuse*thisSurface.diffuse));
+	// 		} else if (RandomFloat(seed) > thisSurface.color.a) {
+	// 			// Refraction
+	// 			vec3 refractDir = gl_WorldRayDirectionEXT;
+	// 			Refract(refractDir, thisSurface.normal, thisSurface.ior);
+	// 			bounceDirection = normalize(mix(refractDir, bounceDirection, thisSurface.diffuse*thisSurface.diffuse));
+	// 		}
+	// 		RAY_RECURSION_PUSH
+	// 			traceRayEXT(tlas, 0, 0xff, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, xenonRendererData.config.zNear, bounceDirection, xenonRendererData.config.zFar, 0);
+	// 		RAY_RECURSION_POP
+	// 		ray.color.rgb /= mix(3.141592654, 1, thisSurface.metallic);
+	// 	}
+	// 	ray.color.rgb *= thisSurface.color.rgb;
+	// 	ray.color.rgb /= bounce_probabilities;
+	// } else if (recursions < RAY_MAX_RECURSION && LockAmbientLighting(giIndex)) {
+	// 	vec3 bounceDirection = normalize(thisSurface.normal + RandomInUnitSphere(seed));
+	// 	float nDotL = clamp(dot(thisSurface.normal, bounceDirection), 0, 1);
+	// 	RAY_RECURSION_PUSH
+	// 		RAY_GI_PUSH
+	// 			traceRayEXT(tlas, 0, ~(RAYTRACE_MASK_HYDROSPHERE | RAYTRACE_MASK_CLUTTER), 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, facingWorldPosition, xenonRendererData.config.zNear, bounceDirection, 1000, 0);
+	// 		RAY_GI_POP
+	// 	RAY_RECURSION_POP
+	// 	ray.color.rgb *= nDotL;
+	// 	ray.color.rgb *= smoothstep(32, 0, ray.hitDistance);
+	// 	WriteAmbientLighting(giIndex, facingWorldPosition, BOX_NORMAL_DIRS[normalIndex], ray.color.rgb);
+	// 	UnlockAmbientLighting(giIndex);
+	// }
+	// if (!rayIsGi && (xenonRendererData.config.options & RENDER_OPTION_ACCUMULATE) == 0) {
+	// 	ray.color.rgb = thisSurface.color.rgb * GetAmbientLighting(giIndex1, facingWorldPosition, thisSurface.posInVoxel, BOX_NORMAL_DIRS[normalIndex]);
+	// }
 	
 	if (RAY_RECURSIONS < RAY_MAX_RECURSION) {
 	

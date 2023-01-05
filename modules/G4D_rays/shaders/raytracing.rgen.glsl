@@ -1,6 +1,5 @@
 #define SHADER_RGEN
 #include "common.inc.glsl"
-#include "gi.inc.glsl"
 
 layout(location = 0) rayPayloadEXT RayPayload ray;
 
@@ -87,6 +86,7 @@ void main() {
 	switch (xenonRendererData.config.debugViewMode) {
 		default:
 		case RENDERER_DEBUG_VIEWMODE_NONE:
+		case RENDERER_DEBUG_VIEWMODE_SSAO:
 			float ssaoStrength = hitSomething? smoothstep(200, 10, ray.hitDistance) : 0;
 			imageStore(img_normal_or_debug, COORDS, vec4(ray.normal, ssaoStrength * ray.ssao));
 			break;
@@ -133,12 +133,8 @@ void main() {
 			imageStore(img_normal_or_debug, COORDS, vec4(nbRays > 0? Heatmap(xenonRendererData.config.debugViewScale * nbRays / 8) : vec3(0), 1));
 			break;
 		case RENDERER_DEBUG_VIEWMODE_GLOBAL_ILLUMINATION:
-			if (hitSomething) {
-				vec3 gi = GetGi(GetGiIndex(ray.worldPosition + ray.normal * 0.5, 1)).radiance.rgb;
-				imageStore(img_normal_or_debug, COORDS, vec4(gi, 1));
-			}
-			break;
 		case RENDERER_DEBUG_VIEWMODE_UVS:
+		case RENDERER_DEBUG_VIEWMODE_LIGHTS:
 		case RENDERER_DEBUG_VIEWMODE_TEST:
 			break;
 	}

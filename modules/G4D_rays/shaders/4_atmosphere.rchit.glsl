@@ -174,10 +174,10 @@ void main() {
 	fog.rgb *= 1000; // convert from Watts to milliwatts (G4D's standard for render output)
 	fog.a = mix(0, fog.a, pow(clamp(nextHitDistance/mie.a, 0, 1), 0.1));
 	
-	// if (rayIsGi) {
-	// 	// Desaturate GI
-	// 	fog.rgb = mix(fog.rgb, vec3(length(fog.rgb)), 0.7);
-	// }
+	if (rayIsGi) {
+		// Desaturate GI
+		fog.rgb = mix(fog.rgb, vec3(length(fog.rgb)), 0.7);
+	}
 	
 	ray.color.rgb += fog.rgb * fog.a;
 	ray.color.a += pow(fog.a, 8);
