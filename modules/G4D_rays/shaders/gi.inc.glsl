@@ -1,4 +1,5 @@
 #define MAX_GI_ACCUMULATION 400
+#define GI_PROBE_SIZE 1.0
 #define ACCUMULATOR_MAX_FRAME_INDEX_DIFF 2000
 
 uint HashGlobalPosition(uvec3 data) {
@@ -48,7 +49,7 @@ uvec3 HashGlobalPosition3(uvec3 v) {
 
 uint GetGiIndex(in vec3 worldPosition, uint level) {
 	uint halfCount = renderer.globalIlluminationTableCount / 2;
-	uvec3 p = uvec3(ivec3(round(worldPosition)) - renderer.worldOrigin + ivec3(1<<30));
+	uvec3 p = uvec3(ivec3(round(worldPosition / GI_PROBE_SIZE) - vec3(renderer.worldOrigin)/GI_PROBE_SIZE) + ivec3(1<<30));
 	return (HashGlobalPosition(p) % halfCount) + level * halfCount;
 }
 #define GetGi(i) renderer.globalIllumination[i]
@@ -99,7 +100,7 @@ void UnlockAmbientLighting(in uint giIndex) {
 	GetGi(giIndex).lock = 0;
 }
 
-void WriteAmbientLighting(in uint giIndex, in vec3 worldPosition, in vec3 normal, in vec3 color) {
+void WriteAmbientLighting(in uint giIndex, in vec3 worldPosition, in vec3 color) {
 	vec4 radiance = GetGi(giIndex).radiance;
 	float accumulation = clamp(radiance.a + 1, 1, MAX_GI_ACCUMULATION);
 	if (abs(GetGi(giIndex).frameIndex - int64_t(xenonRendererData.frameIndex)) >= ACCUMULATOR_MAX_FRAME_INDEX_DIFF || GetGi(giIndex).iteration != renderer.giIteration) {
@@ -125,7 +126,7 @@ void WriteAmbientLighting(in uint giIndex, in vec3 worldPosition, in vec3 normal
 	GetGi(level1GiIndex).iteration = renderer.giIteration;
 	GetGi(level1GiIndex).frameIndex = int64_t(xenonRendererData.frameIndex);
 	for (int i = 0; i < nbAdjacentSides; ++i) {
-		uint adjacentGiIndex = GetGiIndex(worldPosition + adjacentSides[i], 1);
+		uint adjacentGiIndex = GetGiIndex(worldPosition + adjacentSides[i] * GI_PROBE_SIZE, 1);
 		vec4 level1AdjacentRadiance = GetGi(adjacentGiIndex).radiance;
 		accumulation = clamp(level1AdjacentRadiance.a + 1, 1, MAX_GI_ACCUMULATION/4);
 		if (abs(GetGi(adjacentGiIndex).frameIndex - int64_t(xenonRendererData.frameIndex)) >= ACCUMULATOR_MAX_FRAME_INDEX_DIFF || GetGi(adjacentGiIndex).iteration != renderer.giIteration) {
@@ -141,15 +142,15 @@ void WriteAmbientLighting(in uint giIndex, in vec3 worldPosition, in vec3 normal
 float slerp(float x) {return smoothstep(0.0f,1.0f,x);}
 
 vec3 GetAmbientLighting(in vec3 worldPosition) {
-	vec3 d = worldPosition - round(worldPosition) + 0.5;
+	vec3 d = worldPosition/GI_PROBE_SIZE - round(worldPosition/GI_PROBE_SIZE) + 0.5;
 	vec3 p000 = GetGi(GetGiIndex(worldPosition, 1)).radiance.rgb;
-	vec3 p001 = GetGi(GetGiIndex(worldPosition + vec3(0,0,1), 1)).radiance.rgb;
-	vec3 p010 = GetGi(GetGiIndex(worldPosition + vec3(0,1,0), 1)).radiance.rgb;
-	vec3 p011 = GetGi(GetGiIndex(worldPosition + vec3(0,1,1), 1)).radiance.rgb;
-	vec3 p100 = GetGi(GetGiIndex(worldPosition + vec3(1,0,0), 1)).radiance.rgb;
-	vec3 p101 = GetGi(GetGiIndex(worldPosition + vec3(1,0,1), 1)).radiance.rgb;
-	vec3 p110 = GetGi(GetGiIndex(worldPosition + vec3(1,1,0), 1)).radiance.rgb;
-	vec3 p111 = GetGi(GetGiIndex(worldPosition + vec3(1,1,1), 1)).radiance.rgb;
+	vec3 p001 = GetGi(GetGiIndex(worldPosition + vec3(0,0,1)*GI_PROBE_SIZE, 1)).radiance.rgb;
+	vec3 p010 = GetGi(GetGiIndex(worldPosition + vec3(0,1,0)*GI_PROBE_SIZE, 1)).radiance.rgb;
+	vec3 p011 = GetGi(GetGiIndex(worldPosition + vec3(0,1,1)*GI_PROBE_SIZE, 1)).radiance.rgb;
+	vec3 p100 = GetGi(GetGiIndex(worldPosition + vec3(1,0,0)*GI_PROBE_SIZE, 1)).radiance.rgb;
+	vec3 p101 = GetGi(GetGiIndex(worldPosition + vec3(1,0,1)*GI_PROBE_SIZE, 1)).radiance.rgb;
+	vec3 p110 = GetGi(GetGiIndex(worldPosition + vec3(1,1,0)*GI_PROBE_SIZE, 1)).radiance.rgb;
+	vec3 p111 = GetGi(GetGiIndex(worldPosition + vec3(1,1,1)*GI_PROBE_SIZE, 1)).radiance.rgb;
 	vec3 p00 = (p000 * slerp(1.0f - d.x) + p100 * slerp(d.x));
 	vec3 p01 = (p001 * slerp(1.0f - d.x) + p101 * slerp(d.x));
 	vec3 p10 = (p010 * slerp(1.0f - d.x) + p110 * slerp(d.x));
@@ -187,7 +188,7 @@ void ApplyDefaultLighting() {
 		const float GI_DRAW_MAX_DISTANCE = 100;
 		const float GI_RAY_MAX_DISTANCE = 1000;
 		const vec3 rayOrigin = ray.worldPosition + ray.normal * 0.001;
-		const vec3 facingWorldPosition = ray.worldPosition + ray.normal;
+		const vec3 facingWorldPosition = ray.worldPosition + ray.normal * GI_PROBE_SIZE * 0.5;
 		const uint giIndex = GetGiIndex(facingWorldPosition, 0);
 		const uint giIndex1 = GetGiIndex(facingWorldPosition, 1);
 		seed += recursions * RAY_MAX_RECURSION;
@@ -201,7 +202,7 @@ void ApplyDefaultLighting() {
 					traceRayEXT(tlas, 0, RAYTRACE_MASK_TERRAIN|RAYTRACE_MASK_ENTITY|RAYTRACE_MASK_VOXEL|RAYTRACE_MASK_ATMOSPHERE, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, 0, bounceDirection, GI_RAY_MAX_DISTANCE, 0);
 				RAY_GI_POP
 			RAY_RECURSION_POP
-			WriteAmbientLighting(giIndex, facingWorldPosition, originalRay.normal, ray.color.rgb * nDotL);
+			WriteAmbientLighting(giIndex, facingWorldPosition, ray.color.rgb * nDotL);
 			UnlockAmbientLighting(giIndex);
 			ray = originalRay;
 		}
