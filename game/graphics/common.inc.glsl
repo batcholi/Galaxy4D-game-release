@@ -154,7 +154,7 @@ vec3 GetEmissionColor(float temperatureKelvin) {
 		GetRadiationAtTemperatureForWavelength(temperatureKelvin, 680.0f),
 		GetRadiationAtTemperatureForWavelength(temperatureKelvin, 550.0f),
 		GetRadiationAtTemperatureForWavelength(temperatureKelvin, 440.0f)
-	) * STEFAN_BOLTZMANN_CONSTANT * pow(temperatureKelvin, 4.0f);
+	);
 }
 vec3 GetEmissionColor(vec4 emission_temperature) {
 	return vec3(emission_temperature.r, emission_temperature.g, emission_temperature.b) + GetEmissionColor(emission_temperature.a);

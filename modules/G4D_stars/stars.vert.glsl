@@ -38,10 +38,10 @@ void main() {
 	
 	// Final color + intensity
 	out_color = vec4(
-		+ color1 * smallStars * 0.1
-		+ color1 * normalStars * 0.5
+		+ color1 * smallStars * 0.2
+		+ color1 * normalStars
 		+ color2 * brightStars * 2
-		+ color2 * veryBrightStars * 64
-		+ color2 * ultraBrightStars * 1024
-	, 1) * 0.333;
+		+ color2 * veryBrightStars * 32
+		+ color2 * ultraBrightStars * 512
+	, 1) * 0.1;
 }

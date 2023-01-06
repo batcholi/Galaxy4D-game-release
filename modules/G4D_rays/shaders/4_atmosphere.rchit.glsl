@@ -96,7 +96,7 @@ void main() {
 		for (int sunIndex = 0; sunIndex < atmosphere.nbSuns; ++sunIndex) {
 			SunData sun = atmosphere.suns[sunIndex];
 			vec3 relativeSunPosition = sun.position - atmospherePosition;
-			vec3 lightIntensity = sun.color * GetSunRadiationAtDistanceSqr(sun.temperature, sun.radius, dot(relativeSunPosition, relativeSunPosition));
+			vec3 lightIntensity = sun.color * GetSunRadiationAtDistanceSqr(sun.temperature, sun.radius, dot(relativeSunPosition, relativeSunPosition)) * 4.0;
 			if (length(lightIntensity) > sunLuminosityThreshold) {
 				vec3 lightDir = normalize(relativeSunPosition);
 				
@@ -162,7 +162,7 @@ void main() {
 		}
 	}
 	
-	vec4 fog = vec4(rayleighScattering + mieScattering + GetEmissionColor(temperature) * stepSize, pow(clamp(maxDepth/thickness, 0, 1), 2));
+	vec4 fog = vec4(rayleighScattering + mieScattering + GetEmissionColor(temperature) * STEFAN_BOLTZMANN_CONSTANT * pow(temperature, 4.0f) * stepSize, pow(clamp(maxDepth/thickness, 0, 1), 2));
 	
 	if (rayIsGi) {
 		// Desaturate GI
