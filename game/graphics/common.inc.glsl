@@ -142,8 +142,7 @@ namespace {
 
 float STEFAN_BOLTZMANN_CONSTANT = 5.670374419184429E-8f;
 float GetSunRadiationAtDistanceSqr(float temperature, float radius, float distanceSqr) {
-	float radiusSqr = radius*radius;
-	return radiusSqr * STEFAN_BOLTZMANN_CONSTANT * pow(temperature, 4.0f) / distanceSqr;
+	return radius*radius * STEFAN_BOLTZMANN_CONSTANT * pow(temperature, 4.0f) / distanceSqr;
 }
 float GetRadiationAtTemperatureForWavelength(float temperature_kelvin, float wavelength_nm) {
 	float hcltkb = 14387769.6f / (wavelength_nm * temperature_kelvin);
@@ -155,7 +154,7 @@ vec3 GetEmissionColor(float temperatureKelvin) {
 		GetRadiationAtTemperatureForWavelength(temperatureKelvin, 680.0f),
 		GetRadiationAtTemperatureForWavelength(temperatureKelvin, 550.0f),
 		GetRadiationAtTemperatureForWavelength(temperatureKelvin, 440.0f)
-	);
+	) * STEFAN_BOLTZMANN_CONSTANT * pow(temperatureKelvin, 4.0f);
 }
 vec3 GetEmissionColor(vec4 emission_temperature) {
 	return vec3(emission_temperature.r, emission_temperature.g, emission_temperature.b) + GetEmissionColor(emission_temperature.a);

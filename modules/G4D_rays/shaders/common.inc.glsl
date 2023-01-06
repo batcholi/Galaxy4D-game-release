@@ -365,32 +365,6 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
 
 	#ifdef SHADER_RCHIT
 		#extension GL_EXT_ray_query : require
-		vec3 GetBasicDirectLighting(in vec3 position, in vec3 normal) {
-			vec3 directLighting = vec3(0);
-			rayQueryEXT q;
-			rayQueryInitializeEXT(q, tlas_lights, 0, 0xff, position, 0, vec3(0,1,0), 0);
-			while (rayQueryProceedEXT(q)) {
-				vec3 lightPosition = rayQueryGetIntersectionObjectToWorldEXT(q, false)[3].xyz; // may be broken on AMD...
-				int id = rayQueryGetIntersectionInstanceIdEXT(q, false);
-				vec3 relativeLightPosition = lightPosition - position;
-				vec3 lightDir = normalize(relativeLightPosition);
-				float nDotL = dot(normal, lightDir);
-				LightSourceInstanceData lightSource = renderer.lightSources[id].instance;
-				float distanceToLightSurface = length(relativeLightPosition) - lightSource.innerRadius;
-				if (distanceToLightSurface < 0.001) {
-					directLighting += lightSource.color * lightSource.power / (4.0 * PI);
-				} else if (nDotL > 0 && distanceToLightSurface < lightSource.maxDistance) {
-					rayQueryEXT q2;
-					rayQueryInitializeEXT(q2, tlas, gl_RayFlagsTerminateOnFirstHitEXT, RAYTRACE_MASK_TERRAIN|RAYTRACE_MASK_ENTITY|RAYTRACE_MASK_VOXEL|RAYTRACE_MASK_CLUTTER, position + normal * gl_HitTEXT * EPSILON, xenonRendererData.config.zNear, lightDir, distanceToLightSurface);
-					if (rayQueryProceedEXT(q2)) {
-						continue; // We've got a hit, no direct lighting from this light source
-					}
-					float effectiveLightIntensity = max(0, lightSource.power / (4.0 * PI * distanceToLightSurface*distanceToLightSurface + 1) - LIGHT_LUMINOSITY_VISIBLE_THRESHOLD) * clamp(nDotL, 0, 1);
-					directLighting += lightSource.color * effectiveLightIntensity;
-				}
-			}
-			return directLighting;
-		}
 		layout(location = 0) rayPayloadInEXT RayPayload ray;
 		vec3 GetDirectLighting(in vec3 position, in vec3 normal) {
 			position += normal * gl_HitTEXT * EPSILON;
@@ -421,7 +395,6 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
 					directLighting += lightSource.color * lightSource.power;
 				} else if (nDotL > 0 && distanceToLightSurface < lightSource.maxDistance) {
 					float effectiveLightIntensity = max(0, lightSource.power / (4.0 * PI * distanceToLightSurface*distanceToLightSurface + 1) - LIGHT_LUMINOSITY_VISIBLE_THRESHOLD) * clamp(nDotL, 0, 1);
-					
 					uint index = nbLights;
 					#ifdef SORT_LIGHTS
 						for (index = 0; index < nbLights; ++index) {

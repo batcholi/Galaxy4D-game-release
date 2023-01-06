@@ -7,7 +7,7 @@
 
 const int RAYMARCH_STEPS = 48; // low=16, medium=24, high=48, ultra=64
 const int RAYMARCH_LIGHT_STEPS = 5; // low=2, medium=3, high=5, ultra=8
-const float sunLuminosityThreshold = 0.01;
+const float sunLuminosityThreshold = LIGHT_LUMINOSITY_VISIBLE_THRESHOLD;
 
 // #define SUN_SHAFTS
 
@@ -96,7 +96,7 @@ void main() {
 		for (int sunIndex = 0; sunIndex < atmosphere.nbSuns; ++sunIndex) {
 			SunData sun = atmosphere.suns[sunIndex];
 			vec3 relativeSunPosition = sun.position - atmospherePosition;
-			vec3 lightIntensity = sun.color * 0.25f * GetSunRadiationAtDistanceSqr(sun.temperature, sun.radius, dot(relativeSunPosition, relativeSunPosition));
+			vec3 lightIntensity = sun.color * GetSunRadiationAtDistanceSqr(sun.temperature, sun.radius, dot(relativeSunPosition, relativeSunPosition));
 			if (length(lightIntensity) > sunLuminosityThreshold) {
 				vec3 lightDir = normalize(relativeSunPosition);
 				
@@ -140,26 +140,18 @@ void main() {
 						lightRayDist += lightRayStepSize;
 					}
 					
-					vec3 attenuationRayleigh = exp(-rayleigh.rgb * (opticalDepth.x + lightRayOpticalDepth.x / RAYMARCH_LIGHT_STEPS));
-					vec3 attenuationMie = exp(-mie.rgb * (opticalDepth.y + lightRayOpticalDepth.y / RAYMARCH_LIGHT_STEPS));
+					vec3 attenuationRayleigh = exp(-rayleigh.rgb * (opticalDepth.x + lightRayOpticalDepth.x));
+					vec3 attenuationMie = exp(-mie.rgb * (opticalDepth.y + lightRayOpticalDepth.y));
 					rayleighScattering += max(vec3(0),
 						+ rayleigh.rgb * attenuationRayleigh * max(0, density.x * rayleighPhase) * lightIntensity
 					);
 					mieScattering += max(vec3(0),
-						+ mie.rgb * attenuationMie * max(0, density.y * miePhase) * lightIntensity * 0.5
+						+ mie.rgb * attenuationMie * max(0, density.y * miePhase) * lightIntensity
 					);
 				}
 			}
 		}
 	} else {
-		
-		// Cache some values related to that light before raymarching in the atmosphere
-		float mu = dot(viewDir, viewDir);
-		float mumu = mu * mu;
-		float gg = g*g;
-		float rayleighPhase = 3.0 / (50.2654824574 /* (16 * pi) */) * (1.0 + mumu);
-		float miePhase = 3.0 / (25.1327412287 /* (8 * pi) */) * ((1.0 - gg) * (mumu + 1.0)) / (pow(1.0 + gg - 2.0 * mu * g, 1.5) * (2.0 + gg));
-		
 		// Ray-March
 		vec3 rayPos = startPoint;
 		for (int i = 0; i < RAYMARCH_STEPS; ++i) {
@@ -170,9 +162,7 @@ void main() {
 		}
 	}
 	
-	vec4 fog = vec4((rayleighScattering + mieScattering) / RAYMARCH_STEPS + GetEmissionColor(temperature) * 3.141592654, pow(clamp(maxDepth/thickness, 0, 1), 4));
-	fog.rgb *= 1000; // convert from Watts to milliwatts (G4D's standard for render output)
-	fog.a = mix(0, fog.a, pow(clamp(nextHitDistance/mie.a, 0, 1), 0.1));
+	vec4 fog = vec4(rayleighScattering + mieScattering + GetEmissionColor(temperature) * stepSize, pow(clamp(maxDepth/thickness, 0, 1), 2));
 	
 	if (rayIsGi) {
 		// Desaturate GI

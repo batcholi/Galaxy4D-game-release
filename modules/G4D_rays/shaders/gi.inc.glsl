@@ -186,7 +186,7 @@ void ApplyDefaultLighting() {
 	{// Global Illumination
 		bool useGi = !rayIsUnderWater;
 		const float GI_DRAW_MAX_DISTANCE = 100;
-		const float GI_RAY_MAX_DISTANCE = 1000;
+		const float GI_RAY_MAX_DISTANCE = 200;
 		const vec3 rayOrigin = ray.worldPosition + ray.normal * 0.001;
 		const vec3 facingWorldPosition = ray.worldPosition + ray.normal * GI_PROBE_SIZE * 0.5;
 		const uint giIndex = GetGiIndex(facingWorldPosition, 0);
