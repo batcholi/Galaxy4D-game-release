@@ -87,7 +87,7 @@ void main() {
 	const uint giIndex1 = GetGiIndex(facingWorldPosition, 1);
 	seed += recursions * RAY_MAX_RECURSION;
 	
-	// if ((xenonRendererData.config.options & RENDER_OPTION_ACCUMULATE) != 0) {
+	// if ((xenonRendererData.config.options & RENDER_OPTION_GROUND_TRUTH) != 0) {
 	// 	// Path Tracing
 	// 	const float bounce_probabilities = 0.333;
 	// 	if (recursions < RAY_MAX_RECURSION && RandomFloat(seed) < bounce_probabilities) {
@@ -126,7 +126,7 @@ void main() {
 	// 	WriteAmbientLighting(giIndex, facingWorldPosition, BOX_NORMAL_DIRS[normalIndex], ray.color.rgb);
 	// 	UnlockAmbientLighting(giIndex);
 	// }
-	// if (!rayIsGi && (xenonRendererData.config.options & RENDER_OPTION_ACCUMULATE) == 0) {
+	// if (!rayIsGi && (xenonRendererData.config.options & RENDER_OPTION_GROUND_TRUTH) == 0) {
 	// 	ray.color.rgb = thisSurface.color.rgb * GetAmbientLighting(giIndex1, facingWorldPosition, thisSurface.posInVoxel, BOX_NORMAL_DIRS[normalIndex]);
 	// }
 	

@@ -362,7 +362,7 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
 		uint coherentSeed = InitRandomSeed(uint(xenonRendererData.frameIndex),0);
 		uint seed = InitRandomSeed(stableSeed, coherentSeed);
 	#endif
-
+	
 	#ifdef SHADER_RCHIT
 		#extension GL_EXT_ray_query : require
 		layout(location = 0) rayPayloadInEXT RayPayload ray;
@@ -375,11 +375,13 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
 			
 			#define NB_LIGHTS 16
 			#define SORT_LIGHTS
+			#define USE_SOFT_SHADOWS
 			
 			vec3 lightsDir[NB_LIGHTS];
 			float lightsDistance[NB_LIGHTS];
 			vec3 lightsColor[NB_LIGHTS];
 			float lightsPower[NB_LIGHTS];
+			float lightsRadius[NB_LIGHTS];
 			// uint32_t lightsID[NB_LIGHTS];
 			uint32_t nbLights = 0;
 			
@@ -404,6 +406,7 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
 									lightsDistance[i] = lightsDistance[i-1];
 									lightsColor[i] = lightsColor[i-1];
 									lightsPower[i] = lightsPower[i-1];
+									lightsRadius[i] = lightsRadius[i-1];
 									// lightsID[i] = lightsID[i-1];
 								}
 								break;
@@ -415,6 +418,7 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
 					lightsDistance[index] = distanceToLightSurface;
 					lightsColor[index] = lightSource.color;
 					lightsPower[index] = effectiveLightIntensity;
+					lightsRadius[index] = lightSource.innerRadius;
 					// lightsID[index] = lightID;
 					if (nbLights < NB_LIGHTS) ++nbLights;
 					#ifndef /*NOT*/SORT_LIGHTS
@@ -432,15 +436,24 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
 			
 			RayPayload originalRay = ray;
 			for (uint i = 0; i < nbLights; ++i) {
+				vec3 shadowRayDir = lightsDir[i];
 				float shadowRayStart = 0;
 				vec3 colorFilter = vec3(1);
 				float opacity = 0;
 				const float MAX_SHADOW_TRANSPARENCY_RAYS = 2;
 				for (int j = 0; j < MAX_SHADOW_TRANSPARENCY_RAYS; ++j) {
+					#ifdef USE_SOFT_SHADOWS
+						float pointRadius = lightsRadius[i] / lightsDistance[i] * RandomFloat(seed);
+						float pointAngle = RandomFloat(seed) * 2.0 * PI;
+						vec2 diskPoint = vec2(pointRadius * cos(pointAngle), pointRadius * sin(pointAngle));
+						vec3 lightTangent = normalize(cross(shadowRayDir, normal));
+						vec3 lightBitangent = normalize(cross(lightTangent, shadowRayDir));
+						shadowRayDir = normalize(shadowRayDir + diskPoint.x * lightTangent + diskPoint.y * lightBitangent);
+					#endif
 					RAY_RECURSION_PUSH
 						RAY_SHADOW_PUSH
 							ray.color = vec4(0);
-							traceRayEXT(tlas, 0, RAYTRACE_MASK_TERRAIN|RAYTRACE_MASK_ENTITY|RAYTRACE_MASK_VOXEL|RAYTRACE_MASK_CLUTTER, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, position, shadowRayStart, lightsDir[i], lightsDistance[i], 0);
+							traceRayEXT(tlas, 0, RAYTRACE_MASK_TERRAIN|RAYTRACE_MASK_ENTITY|RAYTRACE_MASK_VOXEL|RAYTRACE_MASK_CLUTTER, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, position, shadowRayStart, shadowRayDir, lightsDistance[i], 0);
 						RAY_SHADOW_POP
 					RAY_RECURSION_POP
 					if (ray.hitDistance == -1) {

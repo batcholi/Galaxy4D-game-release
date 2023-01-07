@@ -8,7 +8,7 @@
 #define RENDER_OPTION_TONE_MAPPING (1u<< 0)
 #define RENDER_OPTION_TAA (1u<< 1)
 #define RENDER_OPTION_TEMPORAL_UPSCALING (1u<< 2)
-#define RENDER_OPTION_ACCUMULATE (1u<< 3)
+#define RENDER_OPTION_GROUND_TRUTH (1u<< 3)
 #define RENDER_OPTION_DITHERING (1u<< 4)
 
 // Debug view modes
@@ -289,6 +289,14 @@ STATIC_ASSERT_SIZE(FSRPushConstant, 80)
 		for (;;) {
 			const vec3 p = 2 * vec3(RandomFloat(seed), RandomFloat(seed), RandomFloat(seed)) - 1;
 			if (dot(p, p) < 1) {
+				return p;
+			}
+		}
+	}
+	vec3 RandomInUnitHemiSphere(inout uint seed, in vec3 normal) {
+		for (;;) {
+			const vec3 p = 2 * vec3(RandomFloat(seed), RandomFloat(seed), RandomFloat(seed)) - 1;
+			if (dot(p, p) < 1 && dot(p, normal) > 0) {
 				return p;
 			}
 		}

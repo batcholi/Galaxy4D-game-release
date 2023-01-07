@@ -171,10 +171,31 @@ void ApplyDefaultLighting() {
 		return;
 	}
 	
-	vec3 albedo = surface.color.rgb;
-	
 	// Fresnel
 	float fresnel = Fresnel((renderer.viewMatrix * vec4(ray.worldPosition, 1)).xyz, normalize(WORLD2VIEWNORMAL * ray.normal), surface.ior);
+	
+	// Ground Truth
+	if ((xenonRendererData.config.options & RENDER_OPTION_GROUND_TRUTH) != 0) {
+		ray.color = surface.color;
+		if (recursions < RAY_MAX_RECURSION) {
+			float directLightingProbabilities = 0.5;
+			if (RandomFloat(seed) < directLightingProbabilities) {
+				ray.color.rgb *= GetDirectLighting(ray.worldPosition, ray.normal) * directLightingProbabilities;
+			} else {
+				RayPayload originalRay = ray;
+				vec3 rayOrigin = originalRay.worldPosition + originalRay.normal * originalRay.hitDistance * EPSILON;
+				vec3 bounceDirection = normalize(originalRay.normal + RandomInUnitHemiSphere(seed, originalRay.normal));
+				RAY_RECURSION_PUSH
+					traceRayEXT(tlas, 0, RAYTRACE_MASK_TERRAIN|RAYTRACE_MASK_ENTITY|RAYTRACE_MASK_VOXEL|RAYTRACE_MASK_ATMOSPHERE, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, rayOrigin, 0, bounceDirection, xenonRendererData.config.zFar, 0);
+				RAY_RECURSION_POP
+				originalRay.color.rgb *= ray.color.rgb;
+				ray = originalRay;
+			}
+		}
+		return;
+	}
+	
+	vec3 albedo = surface.color.rgb;
 	
 	// Direct Lighting
 	vec3 directLighting = vec3(0);
@@ -206,7 +227,7 @@ void ApplyDefaultLighting() {
 			UnlockAmbientLighting(giIndex);
 			ray = originalRay;
 		}
-		if (!rayIsGi && (xenonRendererData.config.options & RENDER_OPTION_ACCUMULATE) == 0) {
+		if (!rayIsGi) {
 			float giFactor = useGi ? smoothstep(GI_DRAW_MAX_DISTANCE, 0, ray.hitDistance) : 0;
 			if (useGi && ray.hitDistance < GI_DRAW_MAX_DISTANCE) {
 				vec3 ambient = GetAmbientLighting(facingWorldPosition);

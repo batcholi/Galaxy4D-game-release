@@ -19,12 +19,12 @@ void main() {
 	
 	vec2 uv = (vec2(computeCoord) + 0.5) / vec2(imageSize);
 	vec4 color = vec4(texture(sampler_composite, uv).rgb, 0);
-	if ((xenonRendererData.config.options & RENDER_OPTION_TAA) != 0 && (xenonRendererData.config.options & RENDER_OPTION_TEMPORAL_UPSCALING) == 0 && xenonRendererData.frameIndex > 1) {
+	if ((xenonRendererData.config.options & RENDER_OPTION_TAA) != 0 && ((xenonRendererData.config.options & RENDER_OPTION_TEMPORAL_UPSCALING) == 0) && xenonRendererData.frameIndex > 1) {
 		vec2 uvHistory = uv;
 		if (ReprojectHistoryUV(uvHistory)) {
 			vec4 history = texture(sampler_history, uvHistory);
 			float accumulation;
-			if ((xenonRendererData.config.options & RENDER_OPTION_ACCUMULATE) != 0) {
+			if ((xenonRendererData.config.options & RENDER_OPTION_GROUND_TRUTH) != 0) {
 				accumulation = history.a + 1;
 			} else {
 				history.rgb = VarianceClamp5(history.rgb, sampler_composite, uv);
