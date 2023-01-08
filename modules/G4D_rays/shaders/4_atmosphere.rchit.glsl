@@ -162,7 +162,7 @@ void main() {
 		}
 	}
 	
-	vec4 fog = vec4(rayleighScattering + mieScattering + GetEmissionColor(temperature) * STEFAN_BOLTZMANN_CONSTANT * pow(temperature, 4.0f) * stepSize, pow(clamp(maxDepth/thickness, 0, 1), 2));
+	vec4 fog = vec4(rayleighScattering + mieScattering + GetEmissionColor(temperature) * stepSize, pow(clamp(maxDepth/thickness, 0, 1), 2));
 	
 	if (rayIsGi) {
 		// Desaturate GI

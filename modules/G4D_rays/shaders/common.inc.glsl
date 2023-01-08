@@ -135,8 +135,16 @@ struct RendererData {
 	aligned_float32_t wireframeThickness;
 	aligned_i32vec3 worldOrigin;
 	aligned_uint32_t globalIlluminationTableCount;
+	aligned_uint16_t bluenoise_scalar;
+	aligned_uint16_t bluenoise_unitvec1;
+	aligned_uint16_t bluenoise_unitvec2;
+	aligned_uint16_t bluenoise_unitvec3;
+	aligned_uint16_t bluenoise_unitvec3_cosine;
+	aligned_uint16_t bluenoise_vec1;
+	aligned_uint16_t bluenoise_vec2;
+	aligned_uint16_t bluenoise_vec3;
 };
-STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
+STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16 + 8*2);
 
 #ifdef GLSL
 	#define INSTANCE renderer.renderableInstances[gl_InstanceID]
@@ -366,116 +374,6 @@ STATIC_ASSERT_ALIGNED16_SIZE(RendererData, 3*64 + 9*8 + 8 + 4*16);
 	#ifdef SHADER_RCHIT
 		#extension GL_EXT_ray_query : require
 		layout(location = 0) rayPayloadInEXT RayPayload ray;
-		vec3 GetDirectLighting(in vec3 position, in vec3 normal) {
-			position += normal * gl_HitTEXT * EPSILON;
-			vec3 directLighting = vec3(0);
-			
-			rayQueryEXT q;
-			rayQueryInitializeEXT(q, tlas_lights, 0, 0xff, position, 0, vec3(0,1,0), 0);
-			
-			#define NB_LIGHTS 16
-			#define SORT_LIGHTS
-			#define USE_SOFT_SHADOWS
-			
-			vec3 lightsDir[NB_LIGHTS];
-			float lightsDistance[NB_LIGHTS];
-			vec3 lightsColor[NB_LIGHTS];
-			float lightsPower[NB_LIGHTS];
-			float lightsRadius[NB_LIGHTS];
-			// uint32_t lightsID[NB_LIGHTS];
-			uint32_t nbLights = 0;
-			
-			while (rayQueryProceedEXT(q)) {
-				vec3 lightPosition = rayQueryGetIntersectionObjectToWorldEXT(q, false)[3].xyz; // may be broken on AMD...
-				int lightID = rayQueryGetIntersectionInstanceIdEXT(q, false);
-				vec3 relativeLightPosition = lightPosition - position;
-				vec3 lightDir = normalize(relativeLightPosition);
-				float nDotL = dot(normal, lightDir);
-				LightSourceInstanceData lightSource = renderer.lightSources[lightID].instance;
-				float distanceToLightSurface = length(relativeLightPosition) - lightSource.innerRadius - gl_HitTEXT * EPSILON;
-				if (distanceToLightSurface <= 0.001) {
-					directLighting += lightSource.color * lightSource.power;
-				} else if (nDotL > 0 && distanceToLightSurface < lightSource.maxDistance) {
-					float effectiveLightIntensity = max(0, lightSource.power / (4.0 * PI * distanceToLightSurface*distanceToLightSurface + 1) - LIGHT_LUMINOSITY_VISIBLE_THRESHOLD) * clamp(nDotL, 0, 1);
-					uint index = nbLights;
-					#ifdef SORT_LIGHTS
-						for (index = 0; index < nbLights; ++index) {
-							if (effectiveLightIntensity > lightsPower[index]) {
-								for (int i = min(NB_LIGHTS-1, int(nbLights)); i > int(index); --i) {
-									lightsDir[i] = lightsDir[i-1];
-									lightsDistance[i] = lightsDistance[i-1];
-									lightsColor[i] = lightsColor[i-1];
-									lightsPower[i] = lightsPower[i-1];
-									lightsRadius[i] = lightsRadius[i-1];
-									// lightsID[i] = lightsID[i-1];
-								}
-								break;
-							}
-						}
-						if (index == NB_LIGHTS) continue;
-					#endif
-					lightsDir[index] = lightDir;
-					lightsDistance[index] = distanceToLightSurface;
-					lightsColor[index] = lightSource.color;
-					lightsPower[index] = effectiveLightIntensity;
-					lightsRadius[index] = lightSource.innerRadius;
-					// lightsID[index] = lightID;
-					if (nbLights < NB_LIGHTS) ++nbLights;
-					#ifndef /*NOT*/SORT_LIGHTS
-						else {
-							rayQueryTerminateEXT(rayQuery);
-							break;
-						}
-					#endif
-				}
-			}
-			
-			if (xenonRendererData.config.debugViewMode == RENDERER_DEBUG_VIEWMODE_LIGHTS) {
-				imageStore(img_normal_or_debug, COORDS, vec4(Heatmap(float(nbLights) / float(NB_LIGHTS)), 1));
-			}
-			
-			RayPayload originalRay = ray;
-			for (uint i = 0; i < nbLights; ++i) {
-				vec3 shadowRayDir = lightsDir[i];
-				float shadowRayStart = 0;
-				vec3 colorFilter = vec3(1);
-				float opacity = 0;
-				const float MAX_SHADOW_TRANSPARENCY_RAYS = 2;
-				for (int j = 0; j < MAX_SHADOW_TRANSPARENCY_RAYS; ++j) {
-					#ifdef USE_SOFT_SHADOWS
-						float pointRadius = lightsRadius[i] / lightsDistance[i] * RandomFloat(seed);
-						float pointAngle = RandomFloat(seed) * 2.0 * PI;
-						vec2 diskPoint = vec2(pointRadius * cos(pointAngle), pointRadius * sin(pointAngle));
-						vec3 lightTangent = normalize(cross(shadowRayDir, normal));
-						vec3 lightBitangent = normalize(cross(lightTangent, shadowRayDir));
-						shadowRayDir = normalize(shadowRayDir + diskPoint.x * lightTangent + diskPoint.y * lightBitangent);
-					#endif
-					RAY_RECURSION_PUSH
-						RAY_SHADOW_PUSH
-							ray.color = vec4(0);
-							traceRayEXT(tlas, 0, RAYTRACE_MASK_TERRAIN|RAYTRACE_MASK_ENTITY|RAYTRACE_MASK_VOXEL|RAYTRACE_MASK_CLUTTER, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, position, shadowRayStart, shadowRayDir, lightsDistance[i], 0);
-						RAY_SHADOW_POP
-					RAY_RECURSION_POP
-					if (ray.hitDistance == -1) {
-						// lit
-						directLighting += lightsColor[i] * lightsPower[i] * colorFilter * (1 - clamp(opacity,0,1));
-						#ifdef SORT_LIGHTS
-							ray = originalRay;
-							return directLighting;
-						#else
-							break;
-						#endif
-					} else {
-						colorFilter *= ray.color.rgb;
-						opacity += max(0.05, ray.color.a);
-						shadowRayStart = max(ray.hitDistance, ray.t2) * 1.001;
-					}
-					if (opacity > 0.95) break;
-				}
-			}
-			ray = originalRay;
-			return directLighting;
-		}
 	#endif
 
 	#if defined(SHADER_RCHIT) || defined(SHADER_RAHIT) || defined(SHADER_RINT)
