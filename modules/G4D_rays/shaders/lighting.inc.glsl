@@ -333,7 +333,7 @@ float caustics(vec3 worldPosition, vec3 normal, float t) {
 }
 
 vec3 GetDirectLighting(in vec3 worldPosition, in vec3 normal, in vec3 albedo) {
-	vec3 position = worldPosition + normal * gl_HitTEXT * 0.0005;
+	vec3 position = worldPosition + normal * gl_HitTEXT * 0.001;
 	vec3 directLighting = vec3(0);
 	
 	rayQueryEXT q;
@@ -560,8 +560,12 @@ void ApplyDefaultLighting(in uint giObjectIndex, in vec3 giPos, in vec3 giRayOri
 			// Path Tracing
 			vec3 reflectDirection = reflect(gl_WorldRayDirectionEXT, originalRay.normal);
 			vec3 randomDirection = normalize(RandomInUnitHemiSphere(seed, originalRay.normal));
-			// vec3 randomDirection = RandomCosineOnHemisphere(originalRay.normal);
-			vec3 bounceDirection = normalize(mix(reflectDirection, randomDirection, min(0.5, surface.roughness*surface.roughness)));
+			vec3 bounceDirection;
+			if (RandomFloat(seed) < fresnel) {
+				bounceDirection = normalize(mix(reflectDirection, randomDirection, min(0.5, surface.roughness*surface.roughness)));
+			} else {
+				bounceDirection = randomDirection;
+			}
 			RAY_RECURSION_PUSH
 				RAY_GI_PUSH
 					float transparency = 1;
@@ -698,11 +702,11 @@ void ApplyDefaultLighting(in uint giObjectIndex, in vec3 giPos, in vec3 giRayOri
 				vec3 ambient = vec3(0);
 				if (recursions < renderer.rays_max_bounces && realDistance >= GI_MAX_DISTANCE/2) {
 					RayPayload originalRay = ray;
-					vec3 bounceDirection = originalRay.normal;
+					vec3 bounceDirection = RandomCosineOnHemisphere(originalRay.normal);
 					RAY_RECURSION_PUSH
 						RAY_GI_PUSH
 							traceRayEXT(tlas, gl_RayFlagsOpaqueEXT, RAYTRACE_MASK_TERRAIN|RAYTRACE_MASK_ATMOSPHERE|RAYTRACE_MASK_HYDROSPHERE|RAYTRACE_MASK_ENTITY, 0/*rayType*/, 0/*nbRayTypes*/, 0/*missIndex*/, originalRay.worldPosition, originalRay.hitDistance * 0.001, bounceDirection, 10000, 0);
-							ambient = ray.color.rgb * 0.5;
+							ambient = pow(ray.color.rgb, vec3(0.5)) * 0.25;
 						RAY_GI_POP
 					RAY_RECURSION_POP
 					ray = originalRay;
