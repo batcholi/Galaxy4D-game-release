@@ -6,8 +6,7 @@ vec3 GetVertex(in uint index) {
 	return vec3(vertices[index*3].vertex, vertices[index*3+1].vertex, vertices[index*3+2].vertex);
 }
 
-uint32_t computeSize = gl_NumWorkGroups.x*gl_WorkGroupSize.x;
-uint32_t vertexSubdivisionsPerChunk = computeSize - 1;
+uint32_t computeSize = chunk.vertexSubdivisions + 1;
 uint32_t genCol = gl_GlobalInvocationID.x;
 uint32_t genRow = gl_GlobalInvocationID.y;
 uint32_t currentIndex = computeSize * genRow + genCol;
@@ -25,14 +24,24 @@ vec3 ComputeNormal() {
 }
 
 void main() {
+	if (genCol >= computeSize || genRow >= computeSize) return;
+	
 	// Vertex
 	dvec3 posNorm = normalize((chunk.transform * dvec4(GetVertex(currentIndex), 1)).xyz);
 	double height = GetHeightMap(posNorm);
+	
+	// // Additional Detail from texture
+	// uint heightTexIndex = chunk.tex.y + 2/*height*/;
+	// vec2 uv = uvs[currentIndex].uv * max(1,round(chunk.chunkSize / 4));
+	// height += texture(textures[heightTexIndex], uv).r * 0.04 - 0.02;
+	
 	dvec3 finalPos = (chunk.inverseTransform * dvec4(posNorm * height, 1)).xyz;
 	vertices[Xindex].vertex = float(finalPos.x);
 	vertices[Yindex].vertex = float(finalPos.y);
 	vertices[Zindex].vertex = float(finalPos.z);
-	colors[currentIndex].color = u8vec4(vec4(GetColor(posNorm, height), 1) * 255.0f);
+	vec4 splat = GetSplat(posNorm, height);
+	chunk.splats[currentIndex].splat = u8vec4(splat * 255.0);
+	colors[currentIndex].color = u8vec4(vec4(GetColor(posNorm, height, splat), 1) * 255.0f);
 	// Normal
 	vec3 normal = ComputeNormal();
 	normals[Xindex].normal = normal.x;
@@ -42,12 +51,12 @@ void main() {
 	int32_t skirtIndex = -1;
 	if (genCol == 0) {
 		skirtIndex = int(genRow);
-	} else if (genCol == vertexSubdivisionsPerChunk) {
-		skirtIndex = int(vertexSubdivisionsPerChunk*4 - vertexSubdivisionsPerChunk - genRow);
+	} else if (genCol == chunk.vertexSubdivisions) {
+		skirtIndex = int(chunk.vertexSubdivisions*3 - genRow);
 	} else if (genRow == 0) {
-		skirtIndex = int(vertexSubdivisionsPerChunk*4 - genCol);
-	} else if (genRow == vertexSubdivisionsPerChunk) {
-		skirtIndex = int(vertexSubdivisionsPerChunk + genCol);
+		skirtIndex = int(chunk.vertexSubdivisions*4 - genCol);
+	} else if (genRow == chunk.vertexSubdivisions) {
+		skirtIndex = int(chunk.vertexSubdivisions + genCol);
 	}
 	if (skirtIndex != -1) {
 		vertices[(computeSize*computeSize + skirtIndex) * 3 + 1].vertex = vertices[Yindex].vertex - chunk.skirtOffset;
